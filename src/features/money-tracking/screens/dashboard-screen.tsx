@@ -3,7 +3,7 @@ import { Transaction } from "@/src/domain/money/types";
 import { BudgetCircle } from "@/src/features/money-tracking/components/budget-circle";
 import { EditTransactionModal } from "@/src/features/money-tracking/components/edit-transaction-modal";
 import { TransactionList } from "@/src/features/money-tracking/components/transaction-list";
-import { formatCurrency } from "@/src/shared/formatting/formatters";
+import { getCurrentMonthKey } from "@/src/domain/money/analytics";
 import {
     palette,
     radius,
@@ -24,7 +24,6 @@ import {
 export default function DashboardScreen() {
   const router = useRouter();
   const {
-    summary,
     transactions,
     categories,
     isLoading,
@@ -48,20 +47,6 @@ export default function DashboardScreen() {
       );
     });
   }, [transactions, selectedMonth]);
-
-  const monthSummary = useMemo(() => {
-    const income = monthTransactions
-      .filter((tx) => tx.type === "income")
-      .reduce((sum, tx) => sum + tx.amount, 0);
-    const expense = monthTransactions
-      .filter((tx) => tx.type === "expense")
-      .reduce((sum, tx) => sum + tx.amount, 0);
-    return {
-      totalIncome: income,
-      totalExpense: expense,
-      balance: income - expense,
-    };
-  }, [monthTransactions]);
 
   useEffect(() => {
     calculateSummary();
@@ -102,6 +87,7 @@ export default function DashboardScreen() {
     month: "long",
     year: "numeric",
   });
+  const monthKey = getCurrentMonthKey(selectedMonth);
   const isCurrentMonth =
     new Date().getMonth() === selectedMonth.getMonth() &&
     new Date().getFullYear() === selectedMonth.getFullYear();
@@ -159,31 +145,12 @@ export default function DashboardScreen() {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.hero}>
-        <Text style={styles.eyebrow}>
-          {isCurrentMonth ? "Current Balance" : "Balance"}
-        </Text>
-        <Text style={styles.balance}>
-          {formatCurrency(monthSummary.balance)}
-        </Text>
-        <View style={styles.summaryRow}>
-          <View style={styles.summaryPill}>
-            <Text style={styles.summaryLabel}>Income</Text>
-            <Text style={[styles.summaryValue, styles.income]}>
-              {formatCurrency(monthSummary.totalIncome)}
-            </Text>
-          </View>
-          <View style={styles.summaryPill}>
-            <Text style={styles.summaryLabel}>Spent</Text>
-            <Text style={[styles.summaryValue, styles.expense]}>
-              {formatCurrency(monthSummary.totalExpense)}
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      <View style={styles.section}>
-        <BudgetCircle />
+      {/* Budget Circle - Main Focus */}
+      <View style={styles.budgetSection}>
+        <BudgetCircle
+          monthKey={monthKey}
+          subtitle={isCurrentMonth ? "This Month" : monthLabel}
+        />
       </View>
 
       <View style={styles.transactionsSection}>
@@ -281,52 +248,10 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     borderRadius: radius.pill,
   },
-  hero: {
+  budgetSection: {
     marginHorizontal: spacing.lg,
-    padding: spacing.xxl,
-    borderRadius: radius.lg,
-    backgroundColor: palette.surface,
-    ...shadows.card,
-  },
-  eyebrow: {
-    color: palette.textSubtle,
-    fontSize: 12,
-    fontWeight: "800",
-    textTransform: "uppercase",
-  },
-  balance: {
-    color: palette.text,
-    fontSize: 36,
-    fontWeight: "900",
-    marginTop: spacing.sm,
-  },
-  summaryRow: {
-    flexDirection: "row",
-    gap: spacing.md,
     marginTop: spacing.xl,
-  },
-  summaryPill: {
-    flex: 1,
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
-    borderRadius: radius.md,
-    padding: spacing.md,
-  },
-  summaryLabel: {
-    color: palette.textSubtle,
-    fontSize: 11,
-    fontWeight: "800",
-    textTransform: "uppercase",
-  },
-  summaryValue: {
-    fontSize: 15,
-    fontWeight: "900",
-    marginTop: spacing.xs,
-  },
-  income: {
-    color: "#86EFAC",
-  },
-  expense: {
-    color: "#FCA5A5",
+    marginBottom: spacing.xl,
   },
   section: {
     marginHorizontal: spacing.lg,

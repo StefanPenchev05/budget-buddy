@@ -5,45 +5,86 @@ import { useMoneyTracker } from '@/src/composition/use-money-tracker';
 import { formatCurrency } from '@/src/shared/formatting/formatters';
 import { palette, radius, shadows, spacing } from '@/src/shared/theme/design-tokens';
 
-export function BudgetCircle() {
+type BudgetCircleProps = {
+  monthKey?: string;
+  subtitle?: string;
+};
+
+export function BudgetCircle({ monthKey, subtitle }: Readonly<BudgetCircleProps>) {
   const { transactions, categories } = useMoneyTracker();
 
-  const { categorySpending, totalSpending } = useMemo(() => {
-    const currentMonth = getCurrentMonthKey();
-    const monthlyExpenses = transactions.filter(
-      (transaction) =>
-        transaction.type === 'expense' && transaction.date.startsWith(currentMonth),
+  const { categorySpending, totalExpense, totalIncome, net } = useMemo(() => {
+    const effectiveMonthKey = monthKey ?? getCurrentMonthKey();
+    const monthlyTransactions = transactions.filter((transaction) =>
+      transaction.date.startsWith(effectiveMonthKey),
+    );
+
+    const monthlyExpenses = monthlyTransactions.filter(
+      (transaction) => transaction.type === 'expense',
+    );
+    const monthlyIncome = monthlyTransactions.filter(
+      (transaction) => transaction.type === 'income',
+    );
+
+    const expenseTotal = monthlyExpenses.reduce(
+      (sum, transaction) => sum + transaction.amount,
+      0,
+    );
+    const incomeTotal = monthlyIncome.reduce(
+      (sum, transaction) => sum + transaction.amount,
+      0,
     );
 
     return {
       categorySpending: getCategoryTotals(monthlyExpenses, categories, 'expense'),
-      totalSpending: monthlyExpenses.reduce(
-        (sum, transaction) => sum + transaction.amount,
-        0,
-      ),
+      totalExpense: expenseTotal,
+      totalIncome: incomeTotal,
+      net: incomeTotal - expenseTotal,
     };
   }, [transactions, categories]);
+
+  const netColor = net >= 0 ? palette.income : palette.expense;
+  const netPrefix = net > 0 ? '+' : '';
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Budget Overview</Text>
-        <Text style={styles.subtitle}>This Month</Text>
+        <Text style={styles.subtitle}>{subtitle ?? 'This Month'}</Text>
       </View>
 
       <View style={styles.circleContainer}>
         <View style={styles.circle}>
           <View style={styles.centerContent}>
-            <Text style={styles.totalLabel}>Total Spent</Text>
-            <Text style={styles.totalAmount}>{formatCurrency(totalSpending)}</Text>
+            <Text style={styles.totalLabel}>Net</Text>
+            <Text style={[styles.totalAmount, { color: netColor }]}>
+              {netPrefix}{formatCurrency(net)}
+            </Text>
           </View>
+        </View>
+      </View>
+
+      <View style={styles.statsRow}>
+        <View style={styles.statPill}>
+          <Text style={styles.statLabel}>Income</Text>
+          <Text style={[styles.statValue, { color: palette.income }]}
+            >
+            {formatCurrency(totalIncome)}
+          </Text>
+        </View>
+        <View style={styles.statPill}>
+          <Text style={styles.statLabel}>Spent</Text>
+          <Text style={[styles.statValue, { color: palette.expense }]}
+            >
+            {formatCurrency(totalExpense)}
+          </Text>
         </View>
       </View>
 
       <View style={styles.breakdown}>
         {categorySpending.length > 0 ? (
-          categorySpending.map((item, index) => (
-            <View key={index} style={styles.breakdownItem}>
+          categorySpending.map((item) => (
+            <View key={item.categoryId} style={styles.breakdownItem}>
               <View style={styles.breakdownLeft}>
                 <View
                   style={[styles.breakdownColor, { backgroundColor: item.color }]}
@@ -127,6 +168,32 @@ const styles = StyleSheet.create({
   },
   totalAmount: {
     fontSize: 25,
+    fontWeight: '900',
+    color: palette.text,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginBottom: spacing.xl,
+  },
+  statPill: {
+    flex: 1,
+    backgroundColor: palette.surfaceMuted,
+    borderRadius: radius.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderWidth: 1,
+    borderColor: palette.border,
+  },
+  statLabel: {
+    fontSize: 11,
+    color: palette.textSubtle,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
+  statValue: {
+    marginTop: spacing.xs,
+    fontSize: 14,
     fontWeight: '900',
     color: palette.text,
   },
