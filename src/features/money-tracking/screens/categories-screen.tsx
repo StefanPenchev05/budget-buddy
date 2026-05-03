@@ -1,0 +1,1078 @@
+import { useMoneyTracker } from "@/src/composition/use-money-tracker";
+import { generateId } from "@/src/shared/ids/id-generator";
+import { Category } from "@/src/domain/money/types";
+import React, { useMemo, useState } from "react";
+import {
+    Alert,
+    Dimensions,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from "react-native";
+
+const { width } = Dimensions.get("window");
+
+const COLORS = [
+  "#FF6B6B",
+  "#4ECDC4",
+  "#95E1D3",
+  "#FFD93D",
+  "#6BCB77",
+  "#FF8B94",
+  "#A8DADC",
+  "#4A90E2",
+  "#F5A623",
+  "#7ED321",
+  "#BD10E0",
+  "#50E3C2",
+];
+
+const ICONS = [
+  "🍔",
+  "🚗",
+  "🎬",
+  "🛍️",
+  "💡",
+  "⚕️",
+  "📌",
+  "💰",
+  "💻",
+  "📈",
+  "🎁",
+  "🔮",
+  "🏠",
+  "✈️",
+  "📚",
+  "☕",
+  "🏋️",
+  "🐶",
+  "🎮",
+  "🧾",
+];
+
+type FilterType = "all" | "expense" | "income";
+
+const gridItemSize = (width - 32 - 24 - 24) / 4;
+
+export default function CategoriesScreen() {
+  const { categories, addCategory, deleteCategory } = useMoneyTracker();
+
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [categoryName, setCategoryName] = useState("");
+  const [selectedIcon, setSelectedIcon] = useState(ICONS[0]);
+  const [selectedColor, setSelectedColor] = useState(COLORS[0]);
+  const [categoryType, setCategoryType] = useState<"expense" | "income">(
+    "expense",
+  );
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeFilter, setActiveFilter] = useState<FilterType>("all");
+
+  const expenseCategories = categories.filter((c) => c.type === "expense");
+  const incomeCategories = categories.filter((c) => c.type === "income");
+
+  const filteredCategories = useMemo(() => {
+    return categories.filter((category) => {
+      const matchesSearch = category.name
+        .toLowerCase()
+        .includes(searchQuery.trim().toLowerCase());
+
+      const matchesType =
+        activeFilter === "all" || category.type === activeFilter;
+
+      return matchesSearch && matchesType;
+    });
+  }, [categories, searchQuery, activeFilter]);
+
+  const resetForm = () => {
+    setCategoryName("");
+    setSelectedIcon(ICONS[0]);
+    setSelectedColor(COLORS[0]);
+    setCategoryType("expense");
+  };
+
+  const closeModal = () => {
+    setShowAddModal(false);
+    resetForm();
+  };
+
+  const handleAddCategory = async () => {
+    const name = categoryName.trim();
+
+    if (!name) {
+      Alert.alert("Missing name", "Please enter a category name.");
+      return;
+    }
+
+    const alreadyExists = categories.some(
+      (category) =>
+        category.name.toLowerCase() === name.toLowerCase() &&
+        category.type === categoryType,
+    );
+
+    if (alreadyExists) {
+      Alert.alert(
+        "Duplicate category",
+        `You already have a ${categoryType} category named "${name}".`,
+      );
+      return;
+    }
+
+    try {
+      const newCategory: Category = {
+        id: generateId(),
+        name,
+        color: selectedColor,
+        icon: selectedIcon,
+        type: categoryType,
+      };
+
+      await addCategory(newCategory);
+      closeModal();
+      Alert.alert("Created", "Category added successfully.");
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Error", "Failed to add category.");
+    }
+  };
+
+  const handleDeleteCategory = (id: string, name: string) => {
+    Alert.alert(
+      "Delete Category",
+      `Delete "${name}"? This action cannot be undone.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => deleteCategory(id),
+        },
+      ],
+    );
+  };
+
+  const CategoryItem = ({ category }: { category: Category }) => (
+    <TouchableOpacity
+      style={styles.categoryItem}
+      activeOpacity={0.85}
+      onLongPress={() => handleDeleteCategory(category.id, category.name)}
+    >
+      <View
+        style={[styles.categoryGlow, { backgroundColor: category.color }]}
+      />
+
+      <View style={[styles.categoryBadge, { backgroundColor: category.color }]}>
+        <Text style={styles.categoryIcon}>{category.icon}</Text>
+      </View>
+
+      <View style={styles.categoryInfo}>
+        <Text style={styles.categoryName}>{category.name}</Text>
+        <View style={styles.categoryMetaRow}>
+          <View
+            style={[
+              styles.typeDot,
+              {
+                backgroundColor:
+                  category.type === "expense" ? "#FF6B6B" : "#2ECC71",
+              },
+            ]}
+          />
+          <Text style={styles.categorySubtext}>
+            {category.type === "expense"
+              ? "Expense category"
+              : "Income category"}
+          </Text>
+        </View>
+      </View>
+
+      <TouchableOpacity
+        style={styles.deleteButton}
+        onPress={() => handleDeleteCategory(category.id, category.name)}
+      >
+        <Text style={styles.deleteButtonText}>×</Text>
+      </TouchableOpacity>
+    </TouchableOpacity>
+  );
+
+  const FilterButton = ({
+    label,
+    value,
+  }: {
+    label: string;
+    value: FilterType;
+  }) => (
+    <TouchableOpacity
+      style={[
+        styles.filterButton,
+        activeFilter === value && styles.filterButtonActive,
+      ]}
+      onPress={() => setActiveFilter(value)}
+    >
+      <Text
+        style={[
+          styles.filterButtonText,
+          activeFilter === value && styles.filterButtonTextActive,
+        ]}
+      >
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+
+  return (
+    <View style={styles.container}>
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        <View style={styles.heroCard}>
+          <View>
+            <Text style={styles.heroEyebrow}>Money Tracker</Text>
+            <Text style={styles.heroTitle}>Categories</Text>
+            <Text style={styles.heroSubtitle}>
+              Organize income and expenses with custom colors and icons.
+            </Text>
+          </View>
+
+          <View style={styles.heroIcon}>
+            <Text style={styles.heroIconText}>🏷️</Text>
+          </View>
+        </View>
+
+        <View style={styles.statsCard}>
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{categories.length}</Text>
+            <Text style={styles.statLabel}>Total</Text>
+          </View>
+
+          <View style={styles.statDivider} />
+
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{expenseCategories.length}</Text>
+            <Text style={styles.statLabel}>Expense</Text>
+          </View>
+
+          <View style={styles.statDivider} />
+
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{incomeCategories.length}</Text>
+            <Text style={styles.statLabel}>Income</Text>
+          </View>
+        </View>
+
+        <View style={styles.searchCard}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search categories..."
+            placeholderTextColor="#94A3B8"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery("")}>
+              <Text style={styles.clearSearch}>×</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        <View style={styles.filterRow}>
+          <FilterButton label="All" value="all" />
+          <FilterButton label="Expense" value="expense" />
+          <FilterButton label="Income" value="income" />
+        </View>
+
+        <View style={styles.sectionHeader}>
+          <View>
+            <Text style={styles.sectionTitle}>Your Categories</Text>
+            <Text style={styles.sectionSubtitle}>
+              Long press a category to delete it.
+            </Text>
+          </View>
+
+          <View style={styles.sectionBadge}>
+            <Text style={styles.sectionBadgeText}>
+              {filteredCategories.length}
+            </Text>
+          </View>
+        </View>
+
+        {filteredCategories.length > 0 ? (
+          filteredCategories.map((category) => (
+            <CategoryItem key={category.id} category={category} />
+          ))
+        ) : (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyIcon}>🗂️</Text>
+            <Text style={styles.emptyTitle}>No categories found</Text>
+            <Text style={styles.emptyText}>
+              Try changing your search or create a new category.
+            </Text>
+          </View>
+        )}
+      </ScrollView>
+
+      <TouchableOpacity
+        style={styles.addButton}
+        activeOpacity={0.9}
+        onPress={() => setShowAddModal(true)}
+      >
+        <Text style={styles.addButtonIcon}>＋</Text>
+        <Text style={styles.addButtonText}>New Category</Text>
+      </TouchableOpacity>
+
+      <Modal
+        visible={showAddModal}
+        animationType="slide"
+        transparent
+        onRequestClose={closeModal}
+      >
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+          <View style={styles.modalContent}>
+            <View style={styles.modalHandle} />
+
+            <View style={styles.modalHeader}>
+              <View>
+                <Text style={styles.modalTitle}>Create Category</Text>
+                <Text style={styles.modalSubtitle}>
+                  Customize how it appears in your tracker.
+                </Text>
+              </View>
+
+              <TouchableOpacity style={styles.modalClose} onPress={closeModal}>
+                <Text style={styles.modalCloseButton}>×</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              style={styles.modalBody}
+              showsVerticalScrollIndicator={false}
+            >
+              <View style={styles.previewCard}>
+                <View
+                  style={[
+                    styles.previewIconCircle,
+                    { backgroundColor: selectedColor },
+                  ]}
+                >
+                  <Text style={styles.previewIcon}>{selectedIcon}</Text>
+                </View>
+
+                <View style={styles.previewInfo}>
+                  <Text style={styles.previewName}>
+                    {categoryName.trim() || "Category name"}
+                  </Text>
+                  <Text style={styles.previewType}>
+                    {categoryType === "expense" ? "Expense" : "Income"}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.formSection}>
+                <Text style={styles.formLabel}>Type</Text>
+
+                <View style={styles.typeSelector}>
+                  <TouchableOpacity
+                    style={[
+                      styles.typeButton,
+                      categoryType === "expense" && styles.typeButtonExpense,
+                    ]}
+                    onPress={() => setCategoryType("expense")}
+                  >
+                    <Text style={styles.typeButtonEmoji}>💸</Text>
+                    <Text
+                      style={[
+                        styles.typeButtonText,
+                        categoryType === "expense" &&
+                          styles.typeButtonTextActive,
+                      ]}
+                    >
+                      Expense
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.typeButton,
+                      categoryType === "income" && styles.typeButtonIncome,
+                    ]}
+                    onPress={() => setCategoryType("income")}
+                  >
+                    <Text style={styles.typeButtonEmoji}>💰</Text>
+                    <Text
+                      style={[
+                        styles.typeButtonText,
+                        categoryType === "income" &&
+                          styles.typeButtonTextActive,
+                      ]}
+                    >
+                      Income
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <View style={styles.formSection}>
+                <Text style={styles.formLabel}>Name</Text>
+
+                <TextInput
+                  style={styles.input}
+                  placeholder="Groceries, Salary, Rent..."
+                  value={categoryName}
+                  onChangeText={setCategoryName}
+                  placeholderTextColor="#94A3B8"
+                  autoCapitalize="words"
+                />
+              </View>
+
+              <View style={styles.formSection}>
+                <Text style={styles.formLabel}>Icon</Text>
+
+                <View style={styles.grid}>
+                  {ICONS.map((icon) => (
+                    <TouchableOpacity
+                      key={icon}
+                      style={[
+                        styles.iconButton,
+                        selectedIcon === icon && styles.iconButtonSelected,
+                      ]}
+                      onPress={() => setSelectedIcon(icon)}
+                    >
+                      <Text style={styles.icon}>{icon}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              <View style={styles.formSection}>
+                <Text style={styles.formLabel}>Color</Text>
+
+                <View style={styles.grid}>
+                  {COLORS.map((color) => (
+                    <TouchableOpacity
+                      key={color}
+                      style={[
+                        styles.colorButton,
+                        { backgroundColor: color },
+                        selectedColor === color && styles.colorButtonSelected,
+                      ]}
+                      onPress={() => setSelectedColor(color)}
+                    >
+                      {selectedColor === color && (
+                        <Text style={styles.colorCheckmark}>✓</Text>
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            </ScrollView>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={closeModal}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.createButton,
+                  !categoryName.trim() && styles.createButtonDisabled,
+                ]}
+                onPress={handleAddCategory}
+                disabled={!categoryName.trim()}
+              >
+                <Text style={styles.createButtonText}>Create</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#090D14",
+  },
+
+  scrollView: {
+    flex: 1,
+  },
+
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 110,
+  },
+
+  heroCard: {
+    backgroundColor: "#60A5FA",
+    borderRadius: 26,
+    padding: 22,
+    marginBottom: 16,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    overflow: "hidden",
+  },
+
+  heroEyebrow: {
+    color: "#94A3B8",
+    fontSize: 12,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    marginBottom: 8,
+  },
+
+  heroTitle: {
+    color: "#121826",
+    fontSize: 30,
+    fontWeight: "900",
+    marginBottom: 8,
+  },
+
+  heroSubtitle: {
+    color: "#CBD5E1",
+    fontSize: 14,
+    lineHeight: 20,
+    maxWidth: width * 0.58,
+  },
+
+  heroIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: "rgba(255,255,255,0.12)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  heroIconText: {
+    fontSize: 34,
+  },
+
+  statsCard: {
+    flexDirection: "row",
+    backgroundColor: "#121826",
+    borderRadius: 22,
+    paddingVertical: 18,
+    marginBottom: 14,
+    shadowColor: "#000000",
+    shadowOpacity: 0.06,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 3,
+  },
+
+  statItem: {
+    flex: 1,
+    alignItems: "center",
+  },
+
+  statValue: {
+    fontSize: 24,
+    fontWeight: "900",
+    color: "#F8FAFC",
+  },
+
+  statLabel: {
+    fontSize: 12,
+    color: "#94A3B8",
+    marginTop: 4,
+    fontWeight: "600",
+  },
+
+  statDivider: {
+    width: 1,
+    backgroundColor: "#263244",
+  },
+
+  searchCard: {
+    height: 52,
+    borderRadius: 18,
+    backgroundColor: "#121826",
+    paddingHorizontal: 16,
+    marginBottom: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#263244",
+  },
+
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    color: "#F8FAFC",
+  },
+
+  clearSearch: {
+    fontSize: 26,
+    color: "#94A3B8",
+    paddingHorizontal: 6,
+  },
+
+  filterRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 22,
+  },
+
+  filterButton: {
+    flex: 1,
+    paddingVertical: 11,
+    borderRadius: 999,
+    backgroundColor: "#121826",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#263244",
+  },
+
+  filterButtonActive: {
+    backgroundColor: "#60A5FA",
+    borderColor: "#60A5FA",
+  },
+
+  filterButtonText: {
+    color: "#94A3B8",
+    fontSize: 13,
+    fontWeight: "800",
+  },
+
+  filterButtonTextActive: {
+    color: "#121826",
+  },
+
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "900",
+    color: "#F8FAFC",
+  },
+
+  sectionSubtitle: {
+    marginTop: 3,
+    fontSize: 12,
+    color: "#94A3B8",
+  },
+
+  sectionBadge: {
+    minWidth: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "#60A5FA",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 10,
+  },
+
+  sectionBadgeText: {
+    color: "#121826",
+    fontWeight: "900",
+  },
+
+  categoryItem: {
+    position: "relative",
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#121826",
+    borderRadius: 22,
+    padding: 14,
+    marginBottom: 12,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#263244",
+  },
+
+  categoryGlow: {
+    position: "absolute",
+    left: -30,
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    opacity: 0.14,
+  },
+
+  categoryBadge: {
+    width: 54,
+    height: 54,
+    borderRadius: 18,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 14,
+  },
+
+  categoryIcon: {
+    fontSize: 26,
+  },
+
+  categoryInfo: {
+    flex: 1,
+  },
+
+  categoryName: {
+    fontSize: 16,
+    fontWeight: "900",
+    color: "#F8FAFC",
+    marginBottom: 6,
+  },
+
+  categoryMetaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  typeDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    marginRight: 6,
+  },
+
+  categorySubtext: {
+    fontSize: 12,
+    color: "#94A3B8",
+    fontWeight: "600",
+  },
+
+  deleteButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "#1B2433",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  deleteButtonText: {
+    fontSize: 24,
+    lineHeight: 26,
+    color: "#94A3B8",
+  },
+
+  addButton: {
+    position: "absolute",
+    left: 16,
+    right: 16,
+    bottom: 18,
+    height: 58,
+    borderRadius: 20,
+    backgroundColor: "#60A5FA",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000000",
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 8,
+  },
+
+  addButtonIcon: {
+    color: "#121826",
+    fontSize: 22,
+    marginRight: 8,
+    fontWeight: "900",
+  },
+
+  addButtonText: {
+    color: "#121826",
+    fontSize: 16,
+    fontWeight: "900",
+  },
+
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(17, 24, 39, 0.55)",
+  },
+
+  modalContent: {
+    backgroundColor: "#121826",
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    maxHeight: "92%",
+    overflow: "hidden",
+  },
+
+  modalHandle: {
+    width: 46,
+    height: 5,
+    borderRadius: 999,
+    backgroundColor: "#334155",
+    alignSelf: "center",
+    marginTop: 10,
+    marginBottom: 8,
+  },
+
+  modalHeader: {
+    paddingHorizontal: 18,
+    paddingBottom: 16,
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: "900",
+    color: "#F8FAFC",
+  },
+
+  modalSubtitle: {
+    marginTop: 4,
+    fontSize: 13,
+    color: "#94A3B8",
+  },
+
+  modalClose: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#1B2433",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  modalCloseButton: {
+    fontSize: 26,
+    color: "#94A3B8",
+    lineHeight: 28,
+  },
+
+  modalBody: {
+    paddingHorizontal: 18,
+  },
+
+  previewCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#121826",
+    borderRadius: 22,
+    padding: 14,
+    marginBottom: 22,
+    borderWidth: 1,
+    borderColor: "#263244",
+  },
+
+  previewIconCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 14,
+  },
+
+  previewIcon: {
+    fontSize: 30,
+  },
+
+  previewInfo: {
+    flex: 1,
+  },
+
+  previewName: {
+    fontSize: 17,
+    fontWeight: "900",
+    color: "#F8FAFC",
+  },
+
+  previewType: {
+    marginTop: 5,
+    fontSize: 13,
+    color: "#94A3B8",
+    fontWeight: "700",
+  },
+
+  formSection: {
+    marginBottom: 24,
+  },
+
+  formLabel: {
+    fontSize: 14,
+    fontWeight: "900",
+    color: "#F8FAFC",
+    marginBottom: 10,
+  },
+
+  typeSelector: {
+    flexDirection: "row",
+    gap: 12,
+  },
+
+  typeButton: {
+    flex: 1,
+    borderRadius: 20,
+    paddingVertical: 16,
+    alignItems: "center",
+    backgroundColor: "#121826",
+    borderWidth: 1,
+    borderColor: "#263244",
+  },
+
+  typeButtonExpense: {
+    backgroundColor: "#FF6B6B",
+    borderColor: "#FF6B6B",
+  },
+
+  typeButtonIncome: {
+    backgroundColor: "#2ECC71",
+    borderColor: "#2ECC71",
+  },
+
+  typeButtonEmoji: {
+    fontSize: 26,
+    marginBottom: 6,
+  },
+
+  typeButtonText: {
+    fontSize: 14,
+    fontWeight: "900",
+    color: "#94A3B8",
+  },
+
+  typeButtonTextActive: {
+    color: "#121826",
+  },
+
+  input: {
+    height: 52,
+    borderRadius: 16,
+    backgroundColor: "#121826",
+    borderWidth: 1,
+    borderColor: "#263244",
+    paddingHorizontal: 14,
+    color: "#F8FAFC",
+    fontSize: 15,
+    fontWeight: "600",
+  },
+
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+
+  iconButton: {
+    width: gridItemSize,
+    height: gridItemSize,
+    borderRadius: 18,
+    backgroundColor: "#121826",
+    borderWidth: 2,
+    borderColor: "#263244",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  iconButtonSelected: {
+    borderColor: "#60A5FA",
+    backgroundColor: "#1E3A5F",
+  },
+
+  icon: {
+    fontSize: 30,
+  },
+
+  colorButton: {
+    width: gridItemSize,
+    height: gridItemSize,
+    borderRadius: 18,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  colorButtonSelected: {
+    borderWidth: 4,
+    borderColor: "#60A5FA",
+  },
+
+  colorCheckmark: {
+    fontSize: 22,
+    color: "#121826",
+    fontWeight: "900",
+  },
+
+  modalFooter: {
+    flexDirection: "row",
+    gap: 12,
+    padding: 18,
+    borderTopWidth: 1,
+    borderTopColor: "#263244",
+  },
+
+  cancelButton: {
+    flex: 1,
+    height: 52,
+    borderRadius: 18,
+    backgroundColor: "#1B2433",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  cancelButtonText: {
+    color: "#E2E8F0",
+    fontWeight: "900",
+    fontSize: 15,
+  },
+
+  createButton: {
+    flex: 1,
+    height: 52,
+    borderRadius: 18,
+    backgroundColor: "#60A5FA",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  createButtonDisabled: {
+    backgroundColor: "#334155",
+  },
+
+  createButtonText: {
+    color: "#121826",
+    fontWeight: "900",
+    fontSize: 15,
+  },
+
+  emptyState: {
+    alignItems: "center",
+    paddingVertical: 70,
+    paddingHorizontal: 24,
+  },
+
+  emptyIcon: {
+    fontSize: 54,
+    marginBottom: 14,
+  },
+
+  emptyTitle: {
+    fontSize: 19,
+    color: "#F8FAFC",
+    fontWeight: "900",
+    marginBottom: 6,
+  },
+
+  emptyText: {
+    textAlign: "center",
+    fontSize: 14,
+    lineHeight: 20,
+    color: "#94A3B8",
+  },
+});
