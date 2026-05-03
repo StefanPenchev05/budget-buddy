@@ -41,6 +41,7 @@ export function TransactionItem({
   return (
     <TouchableOpacity
       style={styles.container}
+      onPress={() => onEdit?.(transaction)}
       onLongPress={handleDelete}
       activeOpacity={0.7}
     >

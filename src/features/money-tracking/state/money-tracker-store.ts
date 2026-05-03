@@ -1,11 +1,12 @@
 import { create } from 'zustand';
-import { Category, Transaction, Summary } from '@/src/domain/money/types';
+import { Budget, Category, Transaction, Summary } from '@/src/domain/money/types';
 import { MoneyUseCases } from '@/src/application/money/money-use-cases';
 
 interface MoneyTrackerState {
   // State
   categories: Category[];
   transactions: Transaction[];
+  budgets: Budget[];
   summary: Summary;
   isLoading: boolean;
   initialize: () => Promise<void>;
@@ -22,6 +23,11 @@ interface MoneyTrackerState {
   deleteTransaction: (id: string) => Promise<void>;
   loadTransactionsByCategory: (categoryId: string) => Promise<Transaction[]>;
 
+  // Budget actions
+  loadBudgets: (month?: string) => Promise<void>;
+  upsertBudget: (budget: Budget) => Promise<void>;
+  deleteBudget: (id: string, month?: string) => Promise<void>;
+
   // Summary actions
   calculateSummary: () => Promise<void>;
   getSummary: () => Summary;
@@ -31,6 +37,7 @@ export function createMoneyTrackerStore(moneyUseCases: MoneyUseCases) {
   return create<MoneyTrackerState>((set, get) => ({
     categories: [],
     transactions: [],
+    budgets: [],
     summary: {
       totalIncome: 0,
       totalExpense: 0,
@@ -44,12 +51,14 @@ export function createMoneyTrackerStore(moneyUseCases: MoneyUseCases) {
       try {
         set({ isLoading: true });
         await moneyUseCases.initialize();
-        const [categories, transactions, summary] = await Promise.all([
+        const currentMonth = new Date().toISOString().slice(0, 7);
+        const [categories, transactions, budgets, summary] = await Promise.all([
           moneyUseCases.loadCategories(),
           moneyUseCases.loadTransactions(),
+          moneyUseCases.loadBudgets(currentMonth),
           moneyUseCases.calculateAllTimeSummary(),
         ]);
-        set({ categories, transactions, summary });
+        set({ categories, transactions, budgets, summary });
       } catch (error) {
         console.error('Error initializing money tracker:', error);
       } finally {
@@ -157,6 +166,42 @@ export function createMoneyTrackerStore(moneyUseCases: MoneyUseCases) {
       } catch (error) {
         console.error('Error loading transactions by category:', error);
         return [];
+      }
+    },
+
+    loadBudgets: async (month) => {
+      try {
+        set({ isLoading: true });
+        const budgets = await moneyUseCases.loadBudgets(month);
+        set({ budgets });
+      } catch (error) {
+        console.error('Error loading budgets:', error);
+      } finally {
+        set({ isLoading: false });
+      }
+    },
+
+    upsertBudget: async (budget) => {
+      try {
+        set({ isLoading: true });
+        const budgets = await moneyUseCases.upsertBudget(budget);
+        set({ budgets });
+      } catch (error) {
+        console.error('Error saving budget:', error);
+      } finally {
+        set({ isLoading: false });
+      }
+    },
+
+    deleteBudget: async (id, month) => {
+      try {
+        set({ isLoading: true });
+        const budgets = await moneyUseCases.deleteBudget(id, month);
+        set({ budgets });
+      } catch (error) {
+        console.error('Error deleting budget:', error);
+      } finally {
+        set({ isLoading: false });
       }
     },
 

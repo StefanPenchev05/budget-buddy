@@ -1,4 +1,4 @@
-import { Category, Transaction } from '@/src/domain/money/types';
+import { Budget, Category, Transaction } from '@/src/domain/money/types';
 import { MoneyRepository } from '@/src/domain/money/repositories/money-repository';
 
 export function initDatabase(): Promise<unknown>;
@@ -15,6 +15,9 @@ export function getTransactionsByDateRange(
 export function getTransactionsByCategory(categoryId: string): Promise<Transaction[]>;
 export function updateTransaction(transaction: Transaction): Promise<void>;
 export function deleteTransaction(id: string): Promise<void>;
+export function getBudgets(month?: string): Promise<Budget[]>;
+export function upsertBudget(budget: Budget): Promise<void>;
+export function deleteBudget(id: string): Promise<void>;
 export function getTransactionStats(
   startDate: string,
   endDate: string,

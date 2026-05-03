@@ -1,5 +1,5 @@
 import * as SQLite from 'expo-sqlite';
-import { Category, Transaction } from '@/src/domain/money/types';
+import { Budget, Category, Transaction } from '@/src/domain/money/types';
 import { MoneyRepository } from '@/src/domain/money/repositories/money-repository';
 import { defaultCategories } from './default-money-data';
 
@@ -33,8 +33,18 @@ export async function initDatabase() {
       FOREIGN KEY (categoryId) REFERENCES categories(id) ON DELETE CASCADE
     );
 
+    CREATE TABLE IF NOT EXISTS budgets (
+      id TEXT PRIMARY KEY,
+      categoryId TEXT NOT NULL,
+      limitAmount REAL NOT NULL,
+      month TEXT NOT NULL,
+      UNIQUE(categoryId, month),
+      FOREIGN KEY (categoryId) REFERENCES categories(id) ON DELETE CASCADE
+    );
+
     CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date);
     CREATE INDEX IF NOT EXISTS idx_transactions_categoryId ON transactions(categoryId);
+    CREATE INDEX IF NOT EXISTS idx_budgets_month ON budgets(month);
   `);
 
   // Insert default categories if none exist
@@ -277,6 +287,43 @@ export async function deleteTransaction(id: string): Promise<void> {
   await database.runAsync('DELETE FROM transactions WHERE id = ?', [id]);
 }
 
+export async function getBudgets(month?: string): Promise<Budget[]> {
+  const database = await getDatabase();
+
+  if (month) {
+    const result = await database.getAllAsync(
+      'SELECT id, categoryId, limitAmount, month FROM budgets WHERE month = ? ORDER BY categoryId',
+      [month],
+    );
+    return result as Budget[];
+  }
+
+  const result = await database.getAllAsync(
+    'SELECT id, categoryId, limitAmount, month FROM budgets ORDER BY month DESC, categoryId',
+  );
+  return result as Budget[];
+}
+
+export async function upsertBudget(budget: Budget): Promise<void> {
+  const database = await getDatabase();
+  await database.runAsync(
+    `
+    INSERT INTO budgets (id, categoryId, limitAmount, month)
+    VALUES (?, ?, ?, ?)
+    ON CONFLICT(categoryId, month)
+    DO UPDATE SET
+      id = excluded.id,
+      limitAmount = excluded.limitAmount
+    `,
+    [budget.id, budget.categoryId, budget.limitAmount, budget.month],
+  );
+}
+
+export async function deleteBudget(id: string): Promise<void> {
+  const database = await getDatabase();
+  await database.runAsync('DELETE FROM budgets WHERE id = ?', [id]);
+}
+
 export async function getTransactionStats(
   startDate: string,
   endDate: string
@@ -334,6 +381,9 @@ export const moneyRepository: MoneyRepository = {
   getTransactionsByCategory,
   updateTransaction,
   deleteTransaction,
+  getBudgets,
+  upsertBudget,
+  deleteBudget,
   getTransactionStats,
   getAllTimeStats,
 };

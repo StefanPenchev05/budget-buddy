@@ -10,16 +10,19 @@ import {
   Alert,
 } from 'react-native';
 import { useMoneyTracker } from '@/src/composition/use-money-tracker';
+import { Transaction } from '@/src/domain/money/types';
+import { EditTransactionModal } from '@/src/features/money-tracking/components/edit-transaction-modal';
 import { TransactionList } from '@/src/features/money-tracking/components/transaction-list';
 import { formatCurrency } from '@/src/shared/formatting/formatters';
 
 export default function SearchScreen() {
-  const { transactions, categories, deleteTransaction } = useMoneyTracker();
+  const { transactions, categories, deleteTransaction, updateTransaction } = useMoneyTracker();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'expense' | 'income'>('all');
   const [filterCategory, setFilterCategory] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [sortBy, setSortBy] = useState<'date' | 'amount'>('date');
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | undefined>();
 
   const filteredTransactions = useMemo(() => {
     let result = transactions;
@@ -98,7 +101,7 @@ export default function SearchScreen() {
           placeholder="Search transactions..."
           value={searchQuery}
           onChangeText={setSearchQuery}
-          placeholderTextColor="#94A3B8"
+          placeholderTextColor="#8997B3"
         />
         <TouchableOpacity
           style={styles.filterButton}
@@ -205,9 +208,17 @@ export default function SearchScreen() {
           transactions={filteredTransactions}
           categories={categories}
           onDeleteTransaction={deleteTransaction}
+          onEditTransaction={setEditingTransaction}
           groupByDate={true}
         />
       </View>
+      <EditTransactionModal
+        categories={categories}
+        transaction={editingTransaction}
+        visible={!!editingTransaction}
+        onClose={() => setEditingTransaction(undefined)}
+        onSave={updateTransaction}
+      />
     </View>
   );
 }
@@ -215,25 +226,25 @@ export default function SearchScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#090D14',
+    backgroundColor: '#0B1020',
   },
   searchContainer: {
     flexDirection: 'row',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#121826',
+    backgroundColor: '#141B2D',
     borderBottomWidth: 1,
-    borderBottomColor: '#263244',
+    borderBottomColor: '#2B3654',
     gap: 8,
   },
   searchInput: {
     flex: 1,
-    backgroundColor: '#263244',
+    backgroundColor: '#2B3654',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
-    color: '#F8FAFC',
+    color: '#F5F7FB',
   },
   filterButton: {
     paddingHorizontal: 12,
@@ -243,11 +254,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   filtersContainer: {
-    backgroundColor: '#121826',
+    backgroundColor: '#141B2D',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#263244',
+    borderBottomColor: '#2B3654',
   },
   filterSection: {
     flexDirection: 'row',
@@ -258,7 +269,7 @@ const styles = StyleSheet.create({
   filterLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#CBD5E1',
+    color: '#C7D2E5',
   },
   filterTag: {
     paddingVertical: 4,
@@ -266,19 +277,19 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#334155',
-    backgroundColor: '#121826',
+    backgroundColor: '#141B2D',
   },
   filterTagActive: {
-    backgroundColor: '#60A5FA',
-    borderColor: '#60A5FA',
+    backgroundColor: '#7C8CFF',
+    borderColor: '#7C8CFF',
   },
   filterTagText: {
     fontSize: 11,
     fontWeight: '500',
-    color: '#CBD5E1',
+    color: '#C7D2E5',
   },
   filterTagTextActive: {
-    color: '#121826',
+    color: '#141B2D',
   },
   resultsHeader: {
     flexDirection: 'row',
@@ -286,28 +297,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#121826',
+    backgroundColor: '#141B2D',
   },
   resultsLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#F8FAFC',
+    color: '#F5F7FB',
   },
   resultsAmount: {
     fontSize: 12,
-    color: '#CBD5E1',
+    color: '#C7D2E5',
     marginTop: 2,
   },
   exportButton: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: '#60A5FA',
+    backgroundColor: '#7C8CFF',
     borderRadius: 6,
   },
   exportButtonText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#121826',
+    color: '#141B2D',
   },
   listContainer: {
     flex: 1,

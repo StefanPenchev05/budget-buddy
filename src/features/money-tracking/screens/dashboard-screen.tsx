@@ -9,16 +9,19 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useMoneyTracker } from '@/src/composition/use-money-tracker';
+import { Transaction } from '@/src/domain/money/types';
 import { BudgetCircle } from '@/src/features/money-tracking/components/budget-circle';
+import { EditTransactionModal } from '@/src/features/money-tracking/components/edit-transaction-modal';
 import { TransactionList } from '@/src/features/money-tracking/components/transaction-list';
 import { formatCurrency } from '@/src/shared/formatting/formatters';
 import { palette, radius, shadows, spacing } from '@/src/shared/theme/design-tokens';
 
 export default function DashboardScreen() {
   const router = useRouter();
-  const { summary, transactions, categories, isLoading, loadTransactions, calculateSummary, deleteTransaction } =
+  const { summary, transactions, categories, isLoading, loadTransactions, calculateSummary, deleteTransaction, updateTransaction } =
     useMoneyTracker();
   const [refreshing, setRefreshing] = React.useState(false);
+  const [editingTransaction, setEditingTransaction] = React.useState<Transaction | undefined>();
 
   useEffect(() => {
     calculateSummary();
@@ -76,6 +79,7 @@ export default function DashboardScreen() {
             isLoading={isLoading}
             groupByDate={false}
             onDeleteTransaction={deleteTransaction}
+            onEditTransaction={setEditingTransaction}
           />
         ) : (
           <View style={styles.emptyContainer}>
@@ -86,6 +90,13 @@ export default function DashboardScreen() {
       </View>
 
       <View style={{ height: 32 }} />
+      <EditTransactionModal
+        categories={categories}
+        transaction={editingTransaction}
+        visible={!!editingTransaction}
+        onClose={() => setEditingTransaction(undefined)}
+        onSave={updateTransaction}
+      />
     </ScrollView>
   );
 }

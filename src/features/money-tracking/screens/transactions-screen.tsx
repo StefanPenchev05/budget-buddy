@@ -9,16 +9,19 @@ import {
   Alert,
 } from 'react-native';
 import { useMoneyTracker } from '@/src/composition/use-money-tracker';
+import { Transaction } from '@/src/domain/money/types';
+import { EditTransactionModal } from '@/src/features/money-tracking/components/edit-transaction-modal';
 import { TransactionList } from '@/src/features/money-tracking/components/transaction-list';
 import { palette, radius, spacing } from '@/src/shared/theme/design-tokens';
 
 type FilterType = 'all' | 'expense' | 'income';
 
 export default function TransactionsScreen() {
-  const { transactions, categories, isLoading, loadTransactions, deleteTransaction } =
+  const { transactions, categories, isLoading, loadTransactions, deleteTransaction, updateTransaction } =
     useMoneyTracker();
   const [refreshing, setRefreshing] = React.useState(false);
   const [filter, setFilter] = useState<FilterType>('all');
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | undefined>();
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -111,10 +114,18 @@ export default function TransactionsScreen() {
             categories={categories}
             isLoading={isLoading}
             onDeleteTransaction={handleDelete}
+            onEditTransaction={setEditingTransaction}
             groupByDate={true}
           />
         </View>
       </ScrollView>
+      <EditTransactionModal
+        categories={categories}
+        transaction={editingTransaction}
+        visible={!!editingTransaction}
+        onClose={() => setEditingTransaction(undefined)}
+        onSave={updateTransaction}
+      />
     </View>
   );
 }

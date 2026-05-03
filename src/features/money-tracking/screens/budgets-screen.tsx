@@ -1,182 +1,280 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
   Alert,
-  TextInput,
   Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
+import { Budget, Category } from '@/src/domain/money/types';
 import { useMoneyTracker } from '@/src/composition/use-money-tracker';
+import { formatCurrency } from '@/src/shared/formatting/formatters';
 import { generateId } from '@/src/shared/ids/id-generator';
-import { Budget } from '@/src/domain/money/types';
+import { palette, radius, shadows, spacing } from '@/src/shared/theme/design-tokens';
+
+type BudgetProgress = {
+  budget: Budget;
+  category?: Category;
+  spent: number;
+  remaining: number;
+  percentage: number;
+};
 
 export default function BudgetsScreen() {
-  const { categories } = useMoneyTracker();
-  const [budgets, setBudgets] = useState<Budget[]>([]);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const {
+    budgets,
+    categories,
+    transactions,
+    loadBudgets,
+    upsertBudget,
+    deleteBudget,
+  } = useMoneyTracker();
+  const [showModal, setShowModal] = useState(false);
+  const [selectedCategoryId, setSelectedCategoryId] = useState('');
   const [budgetAmount, setBudgetAmount] = useState('');
 
-  const handleAddBudget = () => {
-    if (!selectedCategory || !budgetAmount) {
-      Alert.alert('Error', 'Please select a category and enter a budget amount');
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const expenseCategories = categories.filter((category) => category.type === 'expense');
+
+  useEffect(() => {
+    loadBudgets(currentMonth);
+  }, [currentMonth, loadBudgets]);
+
+  const budgetProgress = useMemo<BudgetProgress[]>(() => {
+    return budgets.map((budget) => {
+      const spent = transactions
+        .filter(
+          (transaction) =>
+            transaction.type === 'expense' &&
+            transaction.categoryId === budget.categoryId &&
+            transaction.date.startsWith(budget.month),
+        )
+        .reduce((sum, transaction) => sum + transaction.amount, 0);
+
+      return {
+        budget,
+        category: categories.find((category) => category.id === budget.categoryId),
+        spent,
+        remaining: budget.limitAmount - spent,
+        percentage:
+          budget.limitAmount > 0 ? Math.min((spent / budget.limitAmount) * 100, 100) : 0,
+      };
+    });
+  }, [budgets, categories, transactions]);
+
+  const totalLimit = budgetProgress.reduce(
+    (sum, item) => sum + item.budget.limitAmount,
+    0,
+  );
+  const totalSpent = budgetProgress.reduce((sum, item) => sum + item.spent, 0);
+  const totalRemaining = totalLimit - totalSpent;
+  const overallProgress = totalLimit > 0 ? Math.min((totalSpent / totalLimit) * 100, 100) : 0;
+
+  const openCreateModal = () => {
+    setSelectedCategoryId(expenseCategories[0]?.id ?? '');
+    setBudgetAmount('');
+    setShowModal(true);
+  };
+
+  const handleSaveBudget = async () => {
+    const parsedAmount = Number.parseFloat(budgetAmount);
+
+    if (!selectedCategoryId || !parsedAmount || parsedAmount <= 0) {
+      Alert.alert('Invalid budget', 'Choose a category and enter a monthly limit above 0.');
       return;
     }
 
-    const existingBudgetIndex = budgets.findIndex(
-      (b) => b.categoryId === selectedCategory
+    const existingBudget = budgets.find(
+      (budget) =>
+        budget.categoryId === selectedCategoryId && budget.month === currentMonth,
     );
 
-    const newBudget: Budget = {
-      id: generateId(),
-      categoryId: selectedCategory,
-      limitAmount: parseFloat(budgetAmount),
-      month: new Date().toISOString().slice(0, 7), // YYYY-MM format
-    };
-
-    if (existingBudgetIndex >= 0) {
-      const updated = [...budgets];
-      updated[existingBudgetIndex] = newBudget;
-      setBudgets(updated);
-    } else {
-      setBudgets([...budgets, newBudget]);
-    }
-
-    setSelectedCategory(null);
-    setBudgetAmount('');
-    setShowAddModal(false);
+    await upsertBudget({
+      id: existingBudget?.id ?? generateId(),
+      categoryId: selectedCategoryId,
+      limitAmount: parsedAmount,
+      month: currentMonth,
+    });
+    setShowModal(false);
   };
 
-  const handleDeleteBudget = (id: string) => {
-    setBudgets(budgets.filter((b) => b.id !== id));
+  const handleDeleteBudget = (budget: Budget) => {
+    Alert.alert('Delete Budget', 'Remove this monthly budget?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () => deleteBudget(budget.id, currentMonth),
+      },
+    ]);
   };
-
-  const getCategoryName = (categoryId: string) => {
-    return categories.find((c) => c.id === categoryId)?.name || 'Unknown';
-  };
-
-  const expenseCategories = categories.filter((c) => c.type === 'expense');
 
   return (
     <View style={styles.container}>
-      <ScrollView style={styles.scrollView}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Budget Goals</Text>
-          <Text style={styles.subtitle}>Set spending limits for each category</Text>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.heroCard}>
+          <Text style={styles.eyebrow}>Monthly Budgets</Text>
+          <Text style={styles.title}>{formatCurrency(totalRemaining)}</Text>
+          <Text style={styles.subtitle}>
+            {totalRemaining >= 0 ? 'Remaining this month' : 'Over budget this month'}
+          </Text>
+
+          <View style={styles.progressTrack}>
+            <View
+              style={[
+                styles.progressFill,
+                {
+                  width: `${overallProgress}%`,
+                  backgroundColor:
+                    overallProgress >= 90 ? palette.expense : palette.primary,
+                },
+              ]}
+            />
+          </View>
+
+          <View style={styles.heroMetrics}>
+            <Metric label="Budgeted" value={formatCurrency(totalLimit)} />
+            <Metric label="Spent" value={formatCurrency(totalSpent)} />
+            <Metric label="Goals" value={String(budgets.length)} />
+          </View>
         </View>
 
-        {budgets.length > 0 ? (
-          budgets.map((budget) => (
-            <View key={budget.id} style={styles.budgetItem}>
-              <View style={styles.budgetHeader}>
-                <Text style={styles.budgetCategory}>
-                  {getCategoryName(budget.categoryId)}
-                </Text>
-                <TouchableOpacity
-                  onPress={() => handleDeleteBudget(budget.id)}
-                  style={styles.deleteButton}
-                >
-                  <Text style={styles.deleteText}>✕</Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Category Limits</Text>
+          <TouchableOpacity style={styles.smallAddButton} onPress={openCreateModal}>
+            <Text style={styles.smallAddButtonText}>Add</Text>
+          </TouchableOpacity>
+        </View>
+
+        {budgetProgress.length > 0 ? (
+          budgetProgress.map((item) => (
+            <View key={item.budget.id} style={styles.budgetCard}>
+              <View style={styles.budgetTopRow}>
+                <View style={styles.categoryTitle}>
+                  <View
+                    style={[
+                      styles.categoryIcon,
+                      { backgroundColor: item.category?.color ?? palette.surfaceMuted },
+                    ]}
+                  >
+                    <Text style={styles.categoryIconText}>{item.category?.icon ?? '•'}</Text>
+                  </View>
+                  <View>
+                    <Text style={styles.categoryName}>
+                      {item.category?.name ?? 'Unknown'}
+                    </Text>
+                    <Text style={styles.budgetMeta}>
+                      {formatCurrency(item.spent)} of {formatCurrency(item.budget.limitAmount)}
+                    </Text>
+                  </View>
+                </View>
+                <TouchableOpacity onPress={() => handleDeleteBudget(item.budget)}>
+                  <Text style={styles.deleteText}>×</Text>
                 </TouchableOpacity>
               </View>
-              <View style={styles.budgetInfo}>
-                <Text style={styles.budgetLimit}>
-                  Budget: ${budget.limitAmount.toFixed(2)}
+
+              <View style={styles.budgetProgressTrack}>
+                <View
+                  style={[
+                    styles.budgetProgressFill,
+                    {
+                      width: `${item.percentage}%`,
+                      backgroundColor:
+                        item.percentage >= 90 ? palette.expense : item.category?.color ?? palette.primary,
+                    },
+                  ]}
+                />
+              </View>
+
+              <View style={styles.budgetBottomRow}>
+                <Text
+                  style={[
+                    styles.remainingText,
+                    { color: item.remaining >= 0 ? palette.income : palette.expense },
+                  ]}
+                >
+                  {formatCurrency(Math.abs(item.remaining))}{' '}
+                  {item.remaining >= 0 ? 'left' : 'over'}
                 </Text>
-                <Text style={styles.budgetMonth}>{budget.month}</Text>
+                <Text style={styles.percentText}>{item.percentage.toFixed(0)}%</Text>
               </View>
             </View>
           ))
         ) : (
-          <View style={styles.emptyContainer}>
+          <View style={styles.emptyCard}>
             <Text style={styles.emptyIcon}>🎯</Text>
-            <Text style={styles.emptyText}>No budget goals yet</Text>
-            <Text style={styles.emptySubtext}>
-              Set budget goals to track your spending limits
+            <Text style={styles.emptyTitle}>No budget goals yet</Text>
+            <Text style={styles.emptyText}>
+              Add category limits to compare real spending against your monthly plan.
             </Text>
+            <TouchableOpacity style={styles.emptyButton} onPress={openCreateModal}>
+              <Text style={styles.emptyButtonText}>Create Budget</Text>
+            </TouchableOpacity>
           </View>
         )}
       </ScrollView>
 
-      <TouchableOpacity
-        style={styles.addButton}
-        onPress={() => setShowAddModal(true)}
-      >
-        <Text style={styles.addButtonText}>+ Add Budget Goal</Text>
-      </TouchableOpacity>
-
-      {/* Add Budget Modal */}
-      <Modal visible={showAddModal} animationType="slide" transparent>
+      <Modal visible={showModal} animationType="slide" transparent onRequestClose={() => setShowModal(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
+            <View style={styles.modalHandle} />
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Add Budget Goal</Text>
-              <TouchableOpacity onPress={() => setShowAddModal(false)}>
-                <Text style={styles.modalCloseButton}>✕</Text>
+              <View>
+                <Text style={styles.modalTitle}>Budget Goal</Text>
+                <Text style={styles.modalSubtitle}>Set a limit for {currentMonth}</Text>
+              </View>
+              <TouchableOpacity style={styles.modalCloseButton} onPress={() => setShowModal(false)}>
+                <Text style={styles.modalCloseText}>×</Text>
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={styles.modalBody}>
-              <View style={styles.formSection}>
-                <Text style={styles.formLabel}>Select Category</Text>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  style={styles.categoryScroll}
-                >
-                  {expenseCategories.map((category) => (
-                    <TouchableOpacity
-                      key={category.id}
-                      style={[
-                        styles.categoryOption,
-                        selectedCategory === category.id &&
-                          styles.categoryOptionSelected,
-                        { borderColor: category.color },
-                      ]}
-                      onPress={() => setSelectedCategory(category.id)}
-                    >
-                      <Text style={styles.categoryOptionIcon}>
-                        {category.icon}
-                      </Text>
-                      <Text style={styles.categoryOptionName}>
-                        {category.name}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
+            <ScrollView contentContainerStyle={styles.modalBody}>
+              <Text style={styles.formLabel}>Category</Text>
+              <View style={styles.categoryGrid}>
+                {expenseCategories.map((category) => (
+                  <TouchableOpacity
+                    key={category.id}
+                    style={[
+                      styles.categoryOption,
+                      selectedCategoryId === category.id && styles.categoryOptionSelected,
+                    ]}
+                    onPress={() => setSelectedCategoryId(category.id)}
+                  >
+                    <Text style={styles.categoryOptionIcon}>{category.icon}</Text>
+                    <Text style={styles.categoryOptionName} numberOfLines={1}>
+                      {category.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
               </View>
 
-              <View style={styles.formSection}>
-                <Text style={styles.formLabel}>Monthly Limit</Text>
-                <View style={styles.inputContainer}>
-                  <Text style={styles.currencySymbol}>$</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="0.00"
-                    value={budgetAmount}
-                    onChangeText={setBudgetAmount}
-                    keyboardType="decimal-pad"
-                    placeholderTextColor="#94A3B8"
-                  />
-                </View>
+              <Text style={styles.formLabel}>Monthly Limit</Text>
+              <View style={styles.inputContainer}>
+                <Text style={styles.currencySymbol}>$</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="0.00"
+                  value={budgetAmount}
+                  onChangeText={setBudgetAmount}
+                  keyboardType="decimal-pad"
+                  placeholderTextColor={palette.textSubtle}
+                />
               </View>
             </ScrollView>
 
             <View style={styles.modalFooter}>
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={() => setShowAddModal(false)}
-              >
+              <TouchableOpacity style={styles.cancelButton} onPress={() => setShowModal(false)}>
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.addBudgetButton}
-                onPress={handleAddBudget}
-              >
-                <Text style={styles.addBudgetButtonText}>Add Budget</Text>
+              <TouchableOpacity style={styles.saveButton} onPress={handleSaveBudget}>
+                <Text style={styles.saveButtonText}>Save Budget</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -186,221 +284,347 @@ export default function BudgetsScreen() {
   );
 }
 
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.metric}>
+      <Text style={styles.metricLabel}>{label}</Text>
+      <Text style={styles.metricValue}>{value}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#090D14',
+    backgroundColor: palette.background,
   },
   scrollView: {
     flex: 1,
   },
-  header: {
-    paddingHorizontal: 16,
-    paddingVertical: 20,
-    backgroundColor: '#121826',
-    borderBottomWidth: 1,
-    borderBottomColor: '#263244',
+  content: {
+    padding: spacing.lg,
+    paddingBottom: spacing.xxxl,
+  },
+  heroCard: {
+    backgroundColor: palette.surface,
+    borderRadius: radius.lg,
+    padding: spacing.xxl,
+    ...shadows.card,
+  },
+  eyebrow: {
+    color: palette.textSubtle,
+    fontSize: 12,
+    fontWeight: '900',
+    textTransform: 'uppercase',
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#F8FAFC',
-    marginBottom: 4,
+    color: palette.text,
+    fontSize: 38,
+    fontWeight: '900',
+    marginTop: spacing.sm,
   },
   subtitle: {
+    color: palette.textMuted,
     fontSize: 14,
-    color: '#CBD5E1',
+    fontWeight: '700',
+    marginTop: spacing.xs,
   },
-  budgetItem: {
-    marginHorizontal: 16,
-    marginVertical: 8,
-    backgroundColor: '#121826',
-    borderRadius: 12,
-    padding: 16,
-    borderLeftWidth: 4,
-    borderLeftColor: '#60A5FA',
+  progressTrack: {
+    height: 12,
+    borderRadius: radius.pill,
+    overflow: 'hidden',
+    backgroundColor: palette.surfaceMuted,
+    marginTop: spacing.xl,
   },
-  budgetHeader: {
+  progressFill: {
+    height: '100%',
+    borderRadius: radius.pill,
+  },
+  heroMetrics: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginTop: spacing.xl,
+  },
+  metric: {
+    flex: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderRadius: radius.md,
+    padding: spacing.md,
+  },
+  metricLabel: {
+    color: palette.textSubtle,
+    fontSize: 10,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+  },
+  metricValue: {
+    color: palette.primary,
+    fontSize: 13,
+    fontWeight: '900',
+    marginTop: spacing.xs,
+  },
+  sectionHeader: {
+    marginTop: spacing.xxl,
+    marginBottom: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  sectionTitle: {
+    color: palette.text,
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  smallAddButton: {
+    backgroundColor: palette.primary,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+  smallAddButtonText: {
+    color: palette.background,
+    fontWeight: '900',
+  },
+  budgetCard: {
+    backgroundColor: palette.surface,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
+    ...shadows.card,
+  },
+  budgetTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  categoryTitle: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    flex: 1,
+    gap: spacing.md,
   },
-  budgetCategory: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#F8FAFC',
-  },
-  deleteButton: {
-    padding: 4,
-  },
-  deleteText: {
-    fontSize: 18,
-    color: '#94A3B8',
-  },
-  budgetInfo: {
-    gap: 4,
-  },
-  budgetLimit: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#E2E8F0',
-  },
-  budgetMonth: {
-    fontSize: 12,
-    color: '#94A3B8',
-  },
-  emptyContainer: {
+  categoryIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 60,
+  },
+  categoryIconText: {
+    fontSize: 22,
+  },
+  categoryName: {
+    color: palette.text,
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  budgetMeta: {
+    color: palette.textMuted,
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: spacing.xs,
+  },
+  deleteText: {
+    color: palette.textSubtle,
+    fontSize: 26,
+    lineHeight: 28,
+  },
+  budgetProgressTrack: {
+    height: 9,
+    borderRadius: radius.pill,
+    overflow: 'hidden',
+    backgroundColor: palette.surfaceMuted,
+    marginTop: spacing.lg,
+  },
+  budgetProgressFill: {
+    height: '100%',
+    borderRadius: radius.pill,
+  },
+  budgetBottomRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: spacing.sm,
+  },
+  remainingText: {
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  percentText: {
+    color: palette.textSubtle,
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  emptyCard: {
+    backgroundColor: palette.surface,
+    borderRadius: radius.lg,
+    padding: spacing.xxl,
+    alignItems: 'center',
+    ...shadows.card,
   },
   emptyIcon: {
-    fontSize: 48,
-    marginBottom: 12,
+    fontSize: 42,
+    marginBottom: spacing.md,
+  },
+  emptyTitle: {
+    color: palette.text,
+    fontSize: 18,
+    fontWeight: '900',
   },
   emptyText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#F8FAFC',
-    marginBottom: 4,
+    color: palette.textMuted,
+    textAlign: 'center',
+    marginTop: spacing.sm,
+    lineHeight: 20,
+    fontWeight: '700',
   },
-  emptySubtext: {
-    fontSize: 14,
-    color: '#94A3B8',
+  emptyButton: {
+    marginTop: spacing.xl,
+    backgroundColor: palette.primary,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
   },
-  addButton: {
-    marginHorizontal: 16,
-    marginVertical: 12,
-    paddingVertical: 12,
-    backgroundColor: '#60A5FA',
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  addButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#121826',
+  emptyButtonText: {
+    color: palette.background,
+    fontWeight: '900',
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.68)',
   },
   modalContent: {
-    backgroundColor: '#121826',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '90%',
-    overflow: 'hidden',
+    backgroundColor: palette.surface,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    maxHeight: '88%',
+    borderWidth: 1,
+    borderColor: palette.border,
+  },
+  modalHandle: {
+    width: 44,
+    height: 5,
+    borderRadius: radius.pill,
+    backgroundColor: palette.border,
+    alignSelf: 'center',
+    marginTop: spacing.md,
   },
   modalHeader: {
+    padding: spacing.xl,
+    borderBottomWidth: 1,
+    borderBottomColor: palette.border,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#263244',
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#F8FAFC',
+    color: palette.text,
+    fontSize: 22,
+    fontWeight: '900',
+  },
+  modalSubtitle: {
+    color: palette.textSubtle,
+    marginTop: spacing.xs,
+    fontWeight: '700',
   },
   modalCloseButton: {
-    fontSize: 24,
-    color: '#94A3B8',
+    width: 38,
+    height: 38,
+    borderRadius: radius.pill,
+    backgroundColor: palette.surfaceMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalCloseText: {
+    color: palette.textMuted,
+    fontSize: 26,
+    lineHeight: 28,
   },
   modalBody: {
-    padding: 16,
-  },
-  modalFooter: {
-    flexDirection: 'row',
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#263244',
-  },
-  cancelButton: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#334155',
-    alignItems: 'center',
-  },
-  cancelButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#CBD5E1',
-  },
-  addBudgetButton: {
-    flex: 1,
-    paddingVertical: 12,
-    backgroundColor: '#60A5FA',
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  addBudgetButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#121826',
-  },
-  formSection: {
-    marginBottom: 20,
+    padding: spacing.lg,
+    gap: spacing.lg,
   },
   formLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 12,
-    color: '#F8FAFC',
+    color: palette.textSubtle,
+    fontSize: 12,
+    fontWeight: '900',
+    textTransform: 'uppercase',
   },
-  categoryScroll: {
-    flexGrow: 0,
+  categoryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
   },
   categoryOption: {
+    width: '31.5%',
+    minHeight: 76,
+    borderRadius: radius.md,
+    backgroundColor: palette.surfaceMuted,
+    borderWidth: 1,
+    borderColor: palette.border,
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    marginRight: 12,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#334155',
-    backgroundColor: '#121826',
+    justifyContent: 'center',
+    padding: spacing.sm,
   },
   categoryOptionSelected: {
-    backgroundColor: '#1E3A5F',
+    borderColor: palette.primary,
+    backgroundColor: palette.primarySoft,
   },
   categoryOptionIcon: {
-    fontSize: 28,
-    marginBottom: 4,
+    fontSize: 22,
+    marginBottom: spacing.xs,
   },
   categoryOptionName: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#CBD5E1',
+    color: palette.text,
+    fontSize: 11,
+    fontWeight: '800',
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#121826',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: '#334155',
+    backgroundColor: palette.surfaceMuted,
+    borderRadius: radius.lg,
+    paddingHorizontal: spacing.lg,
   },
   currencySymbol: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#CBD5E1',
-    marginRight: 8,
+    color: palette.primary,
+    fontSize: 28,
+    fontWeight: '900',
+    marginRight: spacing.sm,
   },
   input: {
     flex: 1,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: '#F8FAFC',
+    color: palette.text,
+    fontSize: 32,
+    fontWeight: '900',
+    paddingVertical: spacing.md,
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    padding: spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: palette.border,
+  },
+  cancelButton: {
+    flex: 1,
+    alignItems: 'center',
+    borderRadius: radius.md,
+    backgroundColor: palette.surfaceMuted,
+    paddingVertical: spacing.md,
+  },
+  cancelButtonText: {
+    color: palette.textMuted,
+    fontWeight: '900',
+  },
+  saveButton: {
+    flex: 1.4,
+    alignItems: 'center',
+    borderRadius: radius.md,
+    backgroundColor: palette.primary,
+    paddingVertical: spacing.md,
+  },
+  saveButtonText: {
+    color: palette.background,
+    fontWeight: '900',
   },
 });

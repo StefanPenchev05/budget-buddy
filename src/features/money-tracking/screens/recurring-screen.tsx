@@ -220,7 +220,7 @@ export default function RecurringScreen() {
                     value={amount}
                     onChangeText={setAmount}
                     keyboardType="decimal-pad"
-                    placeholderTextColor="#94A3B8"
+                    placeholderTextColor="#8997B3"
                   />
                 </View>
               </View>
@@ -233,7 +233,7 @@ export default function RecurringScreen() {
                   placeholder="e.g., Monthly subscription"
                   value={description}
                   onChangeText={setDescription}
-                  placeholderTextColor="#94A3B8"
+                  placeholderTextColor="#8997B3"
                 />
               </View>
 
@@ -335,7 +335,7 @@ export default function RecurringScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#090D14',
+    backgroundColor: '#0B1020',
   },
   scrollView: {
     flex: 1,
@@ -343,24 +343,24 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 16,
     paddingVertical: 20,
-    backgroundColor: '#121826',
+    backgroundColor: '#141B2D',
     borderBottomWidth: 1,
-    borderBottomColor: '#263244',
+    borderBottomColor: '#2B3654',
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#F8FAFC',
+    color: '#F5F7FB',
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 14,
-    color: '#CBD5E1',
+    color: '#C7D2E5',
   },
   recurringItem: {
     marginHorizontal: 16,
     marginVertical: 8,
-    backgroundColor: '#121826',
+    backgroundColor: '#141B2D',
     borderRadius: 12,
     padding: 16,
     borderLeftWidth: 4,
@@ -381,11 +381,11 @@ const styles = StyleSheet.create({
   recurringCategory: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#F8FAFC',
+    color: '#F5F7FB',
   },
   recurringDescription: {
     fontSize: 12,
-    color: '#CBD5E1',
+    color: '#C7D2E5',
     marginTop: 4,
   },
   recurringDetails: {
@@ -399,7 +399,7 @@ const styles = StyleSheet.create({
   },
   recurringDate: {
     fontSize: 12,
-    color: '#94A3B8',
+    color: '#8997B3',
   },
   deleteRecurringButton: {
     paddingVertical: 6,
@@ -425,25 +425,25 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#F8FAFC',
+    color: '#F5F7FB',
     marginBottom: 4,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#94A3B8',
+    color: '#8997B3',
   },
   addButton: {
     marginHorizontal: 16,
     marginVertical: 12,
     paddingVertical: 12,
-    backgroundColor: '#60A5FA',
+    backgroundColor: '#7C8CFF',
     borderRadius: 8,
     alignItems: 'center',
   },
   addButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#121826',
+    color: '#141B2D',
   },
   modalOverlay: {
     flex: 1,
@@ -451,7 +451,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#121826',
+    backgroundColor: '#141B2D',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '95%',
@@ -464,16 +464,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#263244',
+    borderBottomColor: '#2B3654',
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#F8FAFC',
+    color: '#F5F7FB',
   },
   modalCloseButton: {
     fontSize: 24,
-    color: '#94A3B8',
+    color: '#8997B3',
   },
   modalBody: {
     padding: 16,
@@ -484,7 +484,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderTopWidth: 1,
-    borderTopColor: '#263244',
+    borderTopColor: '#2B3654',
   },
   cancelButton: {
     flex: 1,
@@ -497,19 +497,19 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#CBD5E1',
+    color: '#C7D2E5',
   },
   submitButton: {
     flex: 1,
     paddingVertical: 12,
-    backgroundColor: '#60A5FA',
+    backgroundColor: '#7C8CFF',
     borderRadius: 8,
     alignItems: 'center',
   },
   submitButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#121826',
+    color: '#141B2D',
   },
   section: {
     marginBottom: 20,
@@ -518,7 +518,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     marginBottom: 12,
-    color: '#F8FAFC',
+    color: '#F5F7FB',
   },
   typeSelector: {
     flexDirection: 'row',
@@ -530,22 +530,22 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 2,
     borderColor: '#334155',
-    backgroundColor: '#121826',
+    backgroundColor: '#141B2D',
     alignItems: 'center',
   },
   typeButtonActive: {
-    backgroundColor: '#60A5FA',
-    borderColor: '#60A5FA',
+    backgroundColor: '#7C8CFF',
+    borderColor: '#7C8CFF',
   },
   typeButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#CBD5E1',
+    color: '#C7D2E5',
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#121826',
+    backgroundColor: '#141B2D',
     borderRadius: 8,
     paddingHorizontal: 12,
     borderWidth: 1,
@@ -554,17 +554,17 @@ const styles = StyleSheet.create({
   currencySymbol: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#CBD5E1',
+    color: '#C7D2E5',
     marginRight: 8,
   },
   input: {
     flex: 1,
     paddingVertical: 12,
     fontSize: 16,
-    color: '#F8FAFC',
+    color: '#F5F7FB',
   },
   descriptionInput: {
-    backgroundColor: '#121826',
+    backgroundColor: '#141B2D',
     borderWidth: 1,
     borderColor: '#334155',
     borderRadius: 8,
@@ -581,22 +581,22 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 2,
     borderColor: '#334155',
-    backgroundColor: '#121826',
+    backgroundColor: '#141B2D',
   },
   patternButtonActive: {
-    backgroundColor: '#60A5FA',
-    borderColor: '#60A5FA',
+    backgroundColor: '#7C8CFF',
+    borderColor: '#7C8CFF',
   },
   patternButtonText: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#CBD5E1',
+    color: '#C7D2E5',
   },
   patternButtonTextActive: {
-    color: '#121826',
+    color: '#141B2D',
   },
   dateButton: {
-    backgroundColor: '#121826',
+    backgroundColor: '#141B2D',
     borderRadius: 8,
     paddingVertical: 12,
     paddingHorizontal: 12,
@@ -605,7 +605,7 @@ const styles = StyleSheet.create({
   },
   dateButtonText: {
     fontSize: 14,
-    color: '#60A5FA',
+    color: '#7C8CFF',
     fontWeight: '500',
   },
   toggleRow: {

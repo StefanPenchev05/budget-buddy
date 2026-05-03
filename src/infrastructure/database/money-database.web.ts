@@ -1,10 +1,11 @@
-import { Category, Transaction } from '@/src/domain/money/types';
+import { Budget, Category, Transaction } from '@/src/domain/money/types';
 import { MoneyRepository } from '@/src/domain/money/repositories/money-repository';
 import { defaultCategories } from './default-money-data';
 
 type WebStore = {
   categories: Category[];
   transactions: Transaction[];
+  budgets: Budget[];
 };
 
 const storageKey = 'money_tracker_web_store';
@@ -12,6 +13,7 @@ const storageKey = 'money_tracker_web_store';
 let store: WebStore = {
   categories: [...defaultCategories],
   transactions: [],
+  budgets: [],
 };
 
 function getWebStorage() {
@@ -36,8 +38,11 @@ function readStore() {
     store = {
       categories: [...defaultCategories],
       transactions: [],
+      budgets: [],
     };
   }
+
+  store.budgets ??= [];
 }
 
 function writeStore() {
@@ -77,6 +82,7 @@ export async function deleteCategory(id: string): Promise<void> {
   store.transactions = store.transactions.filter(
     (transaction) => transaction.categoryId !== id,
   );
+  store.budgets = store.budgets.filter((budget) => budget.categoryId !== id);
   writeStore();
 }
 
@@ -126,6 +132,36 @@ export async function deleteTransaction(id: string): Promise<void> {
   writeStore();
 }
 
+export async function getBudgets(month?: string): Promise<Budget[]> {
+  readStore();
+  const budgets = [...store.budgets].sort((a, b) =>
+    `${b.month}-${a.categoryId}`.localeCompare(`${a.month}-${b.categoryId}`),
+  );
+
+  return month ? budgets.filter((budget) => budget.month === month) : budgets;
+}
+
+export async function upsertBudget(budget: Budget): Promise<void> {
+  readStore();
+  const existingIndex = store.budgets.findIndex(
+    (item) => item.categoryId === budget.categoryId && item.month === budget.month,
+  );
+
+  if (existingIndex >= 0) {
+    store.budgets[existingIndex] = budget;
+  } else {
+    store.budgets = [...store.budgets, budget];
+  }
+
+  writeStore();
+}
+
+export async function deleteBudget(id: string): Promise<void> {
+  readStore();
+  store.budgets = store.budgets.filter((budget) => budget.id !== id);
+  writeStore();
+}
+
 export async function getTransactionStats(
   startDate: string,
   endDate: string,
@@ -169,6 +205,9 @@ export const moneyRepository: MoneyRepository = {
   getTransactionsByCategory,
   updateTransaction,
   deleteTransaction,
+  getBudgets,
+  upsertBudget,
+  deleteBudget,
   getTransactionStats,
   getAllTimeStats,
 };

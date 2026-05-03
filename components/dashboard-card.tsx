@@ -14,7 +14,7 @@ export function DashboardCard({
   title,
   amount,
   icon,
-  color = '#60A5FA',
+  color = '#7C8CFF',
   subtitle,
 }: DashboardCardProps) {
   return (
@@ -31,7 +31,7 @@ export function DashboardCard({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#121826',
+    backgroundColor: '#141B2D',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -53,7 +53,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 14,
-    color: '#CBD5E1',
+    color: '#C7D2E5',
     fontWeight: '500',
   },
   amount: {
@@ -63,6 +63,6 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 12,
-    color: '#94A3B8',
+    color: '#8997B3',
   },
 });

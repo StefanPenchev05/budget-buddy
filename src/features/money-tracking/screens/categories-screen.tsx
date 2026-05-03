@@ -270,7 +270,7 @@ export default function CategoriesScreen() {
           <TextInput
             style={styles.searchInput}
             placeholder="Search categories..."
-            placeholderTextColor="#94A3B8"
+            placeholderTextColor="#8997B3"
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
@@ -429,7 +429,7 @@ export default function CategoriesScreen() {
                   placeholder="Groceries, Salary, Rent..."
                   value={categoryName}
                   onChangeText={setCategoryName}
-                  placeholderTextColor="#94A3B8"
+                  placeholderTextColor="#8997B3"
                   autoCapitalize="words"
                 />
               </View>
@@ -505,7 +505,7 @@ export default function CategoriesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#090D14",
+    backgroundColor: "#0B1020",
   },
 
   scrollView: {
@@ -518,7 +518,7 @@ const styles = StyleSheet.create({
   },
 
   heroCard: {
-    backgroundColor: "#60A5FA",
+    backgroundColor: "#7C8CFF",
     borderRadius: 26,
     padding: 22,
     marginBottom: 16,
@@ -528,7 +528,7 @@ const styles = StyleSheet.create({
   },
 
   heroEyebrow: {
-    color: "#94A3B8",
+    color: "#8997B3",
     fontSize: 12,
     fontWeight: "700",
     textTransform: "uppercase",
@@ -537,14 +537,14 @@ const styles = StyleSheet.create({
   },
 
   heroTitle: {
-    color: "#121826",
+    color: "#141B2D",
     fontSize: 30,
     fontWeight: "900",
     marginBottom: 8,
   },
 
   heroSubtitle: {
-    color: "#CBD5E1",
+    color: "#C7D2E5",
     fontSize: 14,
     lineHeight: 20,
     maxWidth: width * 0.58,
@@ -565,7 +565,7 @@ const styles = StyleSheet.create({
 
   statsCard: {
     flexDirection: "row",
-    backgroundColor: "#121826",
+    backgroundColor: "#141B2D",
     borderRadius: 22,
     paddingVertical: 18,
     marginBottom: 14,
@@ -584,42 +584,42 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 24,
     fontWeight: "900",
-    color: "#F8FAFC",
+    color: "#F5F7FB",
   },
 
   statLabel: {
     fontSize: 12,
-    color: "#94A3B8",
+    color: "#8997B3",
     marginTop: 4,
     fontWeight: "600",
   },
 
   statDivider: {
     width: 1,
-    backgroundColor: "#263244",
+    backgroundColor: "#2B3654",
   },
 
   searchCard: {
     height: 52,
     borderRadius: 18,
-    backgroundColor: "#121826",
+    backgroundColor: "#141B2D",
     paddingHorizontal: 16,
     marginBottom: 12,
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#263244",
+    borderColor: "#2B3654",
   },
 
   searchInput: {
     flex: 1,
     fontSize: 15,
-    color: "#F8FAFC",
+    color: "#F5F7FB",
   },
 
   clearSearch: {
     fontSize: 26,
-    color: "#94A3B8",
+    color: "#8997B3",
     paddingHorizontal: 6,
   },
 
@@ -633,25 +633,25 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 11,
     borderRadius: 999,
-    backgroundColor: "#121826",
+    backgroundColor: "#141B2D",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#263244",
+    borderColor: "#2B3654",
   },
 
   filterButtonActive: {
-    backgroundColor: "#60A5FA",
-    borderColor: "#60A5FA",
+    backgroundColor: "#7C8CFF",
+    borderColor: "#7C8CFF",
   },
 
   filterButtonText: {
-    color: "#94A3B8",
+    color: "#8997B3",
     fontSize: 13,
     fontWeight: "800",
   },
 
   filterButtonTextActive: {
-    color: "#121826",
+    color: "#141B2D",
   },
 
   sectionHeader: {
@@ -664,27 +664,27 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: "900",
-    color: "#F8FAFC",
+    color: "#F5F7FB",
   },
 
   sectionSubtitle: {
     marginTop: 3,
     fontSize: 12,
-    color: "#94A3B8",
+    color: "#8997B3",
   },
 
   sectionBadge: {
     minWidth: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: "#60A5FA",
+    backgroundColor: "#7C8CFF",
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 10,
   },
 
   sectionBadgeText: {
-    color: "#121826",
+    color: "#141B2D",
     fontWeight: "900",
   },
 
@@ -692,13 +692,13 @@ const styles = StyleSheet.create({
     position: "relative",
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#121826",
+    backgroundColor: "#141B2D",
     borderRadius: 22,
     padding: 14,
     marginBottom: 12,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "#263244",
+    borderColor: "#2B3654",
   },
 
   categoryGlow: {
@@ -730,7 +730,7 @@ const styles = StyleSheet.create({
   categoryName: {
     fontSize: 16,
     fontWeight: "900",
-    color: "#F8FAFC",
+    color: "#F5F7FB",
     marginBottom: 6,
   },
 
@@ -748,7 +748,7 @@ const styles = StyleSheet.create({
 
   categorySubtext: {
     fontSize: 12,
-    color: "#94A3B8",
+    color: "#8997B3",
     fontWeight: "600",
   },
 
@@ -756,7 +756,7 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: "#1B2433",
+    backgroundColor: "#202A44",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -764,7 +764,7 @@ const styles = StyleSheet.create({
   deleteButtonText: {
     fontSize: 24,
     lineHeight: 26,
-    color: "#94A3B8",
+    color: "#8997B3",
   },
 
   addButton: {
@@ -774,7 +774,7 @@ const styles = StyleSheet.create({
     bottom: 18,
     height: 58,
     borderRadius: 20,
-    backgroundColor: "#60A5FA",
+    backgroundColor: "#7C8CFF",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -786,14 +786,14 @@ const styles = StyleSheet.create({
   },
 
   addButtonIcon: {
-    color: "#121826",
+    color: "#141B2D",
     fontSize: 22,
     marginRight: 8,
     fontWeight: "900",
   },
 
   addButtonText: {
-    color: "#121826",
+    color: "#141B2D",
     fontSize: 16,
     fontWeight: "900",
   },
@@ -805,7 +805,7 @@ const styles = StyleSheet.create({
   },
 
   modalContent: {
-    backgroundColor: "#121826",
+    backgroundColor: "#141B2D",
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     maxHeight: "92%",
@@ -832,27 +832,27 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 22,
     fontWeight: "900",
-    color: "#F8FAFC",
+    color: "#F5F7FB",
   },
 
   modalSubtitle: {
     marginTop: 4,
     fontSize: 13,
-    color: "#94A3B8",
+    color: "#8997B3",
   },
 
   modalClose: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#1B2433",
+    backgroundColor: "#202A44",
     justifyContent: "center",
     alignItems: "center",
   },
 
   modalCloseButton: {
     fontSize: 26,
-    color: "#94A3B8",
+    color: "#8997B3",
     lineHeight: 28,
   },
 
@@ -863,12 +863,12 @@ const styles = StyleSheet.create({
   previewCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#121826",
+    backgroundColor: "#141B2D",
     borderRadius: 22,
     padding: 14,
     marginBottom: 22,
     borderWidth: 1,
-    borderColor: "#263244",
+    borderColor: "#2B3654",
   },
 
   previewIconCircle: {
@@ -891,13 +891,13 @@ const styles = StyleSheet.create({
   previewName: {
     fontSize: 17,
     fontWeight: "900",
-    color: "#F8FAFC",
+    color: "#F5F7FB",
   },
 
   previewType: {
     marginTop: 5,
     fontSize: 13,
-    color: "#94A3B8",
+    color: "#8997B3",
     fontWeight: "700",
   },
 
@@ -908,7 +908,7 @@ const styles = StyleSheet.create({
   formLabel: {
     fontSize: 14,
     fontWeight: "900",
-    color: "#F8FAFC",
+    color: "#F5F7FB",
     marginBottom: 10,
   },
 
@@ -922,9 +922,9 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingVertical: 16,
     alignItems: "center",
-    backgroundColor: "#121826",
+    backgroundColor: "#141B2D",
     borderWidth: 1,
-    borderColor: "#263244",
+    borderColor: "#2B3654",
   },
 
   typeButtonExpense: {
@@ -945,21 +945,21 @@ const styles = StyleSheet.create({
   typeButtonText: {
     fontSize: 14,
     fontWeight: "900",
-    color: "#94A3B8",
+    color: "#8997B3",
   },
 
   typeButtonTextActive: {
-    color: "#121826",
+    color: "#141B2D",
   },
 
   input: {
     height: 52,
     borderRadius: 16,
-    backgroundColor: "#121826",
+    backgroundColor: "#141B2D",
     borderWidth: 1,
-    borderColor: "#263244",
+    borderColor: "#2B3654",
     paddingHorizontal: 14,
-    color: "#F8FAFC",
+    color: "#F5F7FB",
     fontSize: 15,
     fontWeight: "600",
   },
@@ -974,16 +974,16 @@ const styles = StyleSheet.create({
     width: gridItemSize,
     height: gridItemSize,
     borderRadius: 18,
-    backgroundColor: "#121826",
+    backgroundColor: "#141B2D",
     borderWidth: 2,
-    borderColor: "#263244",
+    borderColor: "#2B3654",
     justifyContent: "center",
     alignItems: "center",
   },
 
   iconButtonSelected: {
-    borderColor: "#60A5FA",
-    backgroundColor: "#1E3A5F",
+    borderColor: "#7C8CFF",
+    backgroundColor: "#252E61",
   },
 
   icon: {
@@ -1000,12 +1000,12 @@ const styles = StyleSheet.create({
 
   colorButtonSelected: {
     borderWidth: 4,
-    borderColor: "#60A5FA",
+    borderColor: "#7C8CFF",
   },
 
   colorCheckmark: {
     fontSize: 22,
-    color: "#121826",
+    color: "#141B2D",
     fontWeight: "900",
   },
 
@@ -1014,14 +1014,14 @@ const styles = StyleSheet.create({
     gap: 12,
     padding: 18,
     borderTopWidth: 1,
-    borderTopColor: "#263244",
+    borderTopColor: "#2B3654",
   },
 
   cancelButton: {
     flex: 1,
     height: 52,
     borderRadius: 18,
-    backgroundColor: "#1B2433",
+    backgroundColor: "#202A44",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -1036,7 +1036,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 52,
     borderRadius: 18,
-    backgroundColor: "#60A5FA",
+    backgroundColor: "#7C8CFF",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -1046,7 +1046,7 @@ const styles = StyleSheet.create({
   },
 
   createButtonText: {
-    color: "#121826",
+    color: "#141B2D",
     fontWeight: "900",
     fontSize: 15,
   },
@@ -1064,7 +1064,7 @@ const styles = StyleSheet.create({
 
   emptyTitle: {
     fontSize: 19,
-    color: "#F8FAFC",
+    color: "#F5F7FB",
     fontWeight: "900",
     marginBottom: 6,
   },
@@ -1073,6 +1073,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 14,
     lineHeight: 20,
-    color: "#94A3B8",
+    color: "#8997B3",
   },
 });
