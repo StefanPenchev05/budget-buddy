@@ -1,14 +1,14 @@
-import { DarkTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
-import 'react-native-reanimated';
+import { DarkTheme, ThemeProvider } from "@react-navigation/native";
+import { Stack } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { useEffect } from "react";
+import "react-native-reanimated";
 
-import { useMoneyTracker } from '@/src/composition/use-money-tracker';
-import { palette } from '@/src/shared/theme/design-tokens';
+import { useMoneyTracker } from "@/src/composition/use-money-tracker";
+import { palette } from "@/src/shared/theme/design-tokens";
 
 export const unstable_settings = {
-  anchor: '(tabs)',
+  anchor: "(tabs)",
 };
 
 export default function RootLayout() {
@@ -30,10 +30,14 @@ export default function RootLayout() {
           primary: palette.primary,
           text: palette.text,
         },
-      }}>
+      }}
+    >
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+        <Stack.Screen
+          name="modal"
+          options={{ presentation: "modal", title: "Modal" }}
+        />
       </Stack>
       <StatusBar style="light" />
     </ThemeProvider>

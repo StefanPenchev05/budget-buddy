@@ -1,1 +1,1 @@
-export { default } from '@/src/features/money-tracking/screens/dashboard-screen';
+export { default } from "@/src/features/money-tracking/screens/dashboard-screen";

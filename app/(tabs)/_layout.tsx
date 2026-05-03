@@ -1,14 +1,17 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Tabs } from "expo-router";
+import React from "react";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { palette } from '@/src/shared/theme/design-tokens';
+import { HapticTab } from "@/components/haptic-tab";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { palette } from "@/src/shared/theme/design-tokens";
 
 export default function TabLayout() {
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: palette.background }} edges={['top', 'bottom']}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: palette.background }}
+      edges={["top", "bottom"]}
+    >
       <Tabs
         screenOptions={{
           tabBarActiveTintColor: palette.primary,
@@ -19,10 +22,10 @@ export default function TabLayout() {
           },
           headerTintColor: palette.text,
           headerTitleStyle: {
-            fontWeight: '800',
+            fontWeight: "800",
           },
           tabBarButton: HapticTab,
-          tabBarLabelPosition: 'below-icon',
+          tabBarLabelPosition: "below-icon",
           tabBarStyle: {
             borderTopWidth: 0.5,
             borderTopColor: palette.border,
@@ -33,66 +36,75 @@ export default function TabLayout() {
           },
           tabBarLabelStyle: {
             fontSize: 11,
-            fontWeight: '600',
+            fontWeight: "600",
             marginTop: 2,
           },
-        }}>
+        }}
+      >
         <Tabs.Screen
           name="index"
           options={{
-            title: 'Home',
-            tabBarIcon: ({ color }) => <IconSymbol size={24} name="house.fill" color={color} />,
+            title: "Home",
+            tabBarIcon: ({ color }) => (
+              <IconSymbol size={24} name="house.fill" color={color} />
+            ),
           }}
         />
         <Tabs.Screen
           name="add"
           options={{
-            title: 'Add',
-            tabBarIcon: ({ color }) => <IconSymbol size={24} name="plus.circle.fill" color={color} />,
+            title: "Add",
+            tabBarIcon: ({ color }) => (
+              <IconSymbol size={24} name="plus.circle.fill" color={color} />
+            ),
           }}
         />
         <Tabs.Screen
           name="categories"
           options={{
-            title: 'Categories',
-            tabBarIcon: ({ color }) => <IconSymbol size={24} name="tag.fill" color={color} />,
+            title: "Categories",
+            tabBarIcon: ({ color }) => (
+              <IconSymbol size={24} name="tag.fill" color={color} />
+            ),
           }}
         />
         <Tabs.Screen
           name="stats"
           options={{
-            title: 'Stats',
-            tabBarIcon: ({ color }) => <IconSymbol size={24} name="chart.pie.fill" color={color} />,
+            title: "Stats",
+            tabBarIcon: ({ color }) => (
+              <IconSymbol size={24} name="chart.pie.fill" color={color} />
+            ),
           }}
         />
-        
+
         {/* Hidden tabs - accessible via navigation but not shown in main tab bar */}
         <Tabs.Screen
           name="transactions"
           options={{
             href: null,
-            title: 'History',
+            title: "History",
           }}
         />
         <Tabs.Screen
           name="search"
           options={{
             href: null,
-            title: 'Search',
+            title: "Search",
           }}
         />
         <Tabs.Screen
           name="budgets"
           options={{
             href: null,
-            title: 'Budgets',
+            title: "Budgets",
           }}
         />
         <Tabs.Screen
           name="recurring"
           options={{
             href: null,
-            title: 'Recurring',
+            title: "Recurring",
           }}
         />
       </Tabs>
