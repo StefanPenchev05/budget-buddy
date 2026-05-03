@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -22,6 +22,31 @@ export default function DashboardScreen() {
     useMoneyTracker();
   const [refreshing, setRefreshing] = React.useState(false);
   const [editingTransaction, setEditingTransaction] = React.useState<Transaction | undefined>();
+  const [selectedMonth, setSelectedMonth] = useState(new Date());
+
+  const monthTransactions = useMemo(() => {
+    return transactions.filter((tx) => {
+      const txDate = new Date(tx.date);
+      return (
+        txDate.getMonth() === selectedMonth.getMonth() &&
+        txDate.getFullYear() === selectedMonth.getFullYear()
+      );
+    });
+  }, [transactions, selectedMonth]);
+
+  const monthSummary = useMemo(() => {
+    const income = monthTransactions
+      .filter((tx) => tx.type === 'income')
+      .reduce((sum, tx) => sum + tx.amount, 0);
+    const expense = monthTransactions
+      .filter((tx) => tx.type === 'expense')
+      .reduce((sum, tx) => sum + tx.amount, 0);
+    return {
+      totalIncome: income,
+      totalExpense: expense,
+      balance: income - expense,
+    };
+  }, [monthTransactions]);
 
   useEffect(() => {
     calculateSummary();
@@ -33,7 +58,35 @@ export default function DashboardScreen() {
     setRefreshing(false);
   };
 
-  const recentTransactions = transactions.slice(0, 4);
+  const goToPreviousMonth = () => {
+    setSelectedMonth(new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() - 1));
+  };
+
+  const goToNextMonth = () => {
+    const nextMonth = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1);
+    const today = new Date();
+    
+    // Don't allow going past current month
+    if (nextMonth.getFullYear() > today.getFullYear() || 
+        (nextMonth.getFullYear() === today.getFullYear() && nextMonth.getMonth() > today.getMonth())) {
+      return;
+    }
+    
+    setSelectedMonth(nextMonth);
+  };
+
+  const monthLabel = selectedMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const isCurrentMonth =
+    new Date().getMonth() === selectedMonth.getMonth() &&
+    new Date().getFullYear() === selectedMonth.getFullYear();
+  const canGoToNextMonth = (() => {
+    const nextMonth = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1);
+    const today = new Date();
+    return !(nextMonth.getFullYear() > today.getFullYear() || 
+             (nextMonth.getFullYear() === today.getFullYear() && nextMonth.getMonth() > today.getMonth()));
+  })();
+
+  const recentTransactions = monthTransactions.slice(0, 4);
 
   return (
     <ScrollView
@@ -41,20 +94,38 @@ export default function DashboardScreen() {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       showsVerticalScrollIndicator={false}
     >
+      {/* Month Selector */}
+      <View style={styles.monthSelector}>
+        <TouchableOpacity onPress={goToPreviousMonth} style={styles.monthNavButton}>
+          <Text style={styles.monthNavArrow}>‹</Text>
+        </TouchableOpacity>
+        <View style={styles.monthDisplay}>
+          <Text style={styles.monthLabel}>{monthLabel}</Text>
+          {isCurrentMonth && <Text style={styles.currentBadge}>Today</Text>}
+        </View>
+        <TouchableOpacity 
+          onPress={goToNextMonth} 
+          style={[styles.monthNavButton, !canGoToNextMonth && styles.monthNavButtonDisabled]}
+          disabled={!canGoToNextMonth}
+        >
+          <Text style={[styles.monthNavArrow, !canGoToNextMonth && styles.monthNavArrowDisabled]}>›</Text>
+        </TouchableOpacity>
+      </View>
+
       <View style={styles.hero}>
-        <Text style={styles.eyebrow}>Current Balance</Text>
-        <Text style={styles.balance}>{formatCurrency(summary.balance)}</Text>
+        <Text style={styles.eyebrow}>{isCurrentMonth ? 'Current Balance' : 'Balance'}</Text>
+        <Text style={styles.balance}>{formatCurrency(monthSummary.balance)}</Text>
         <View style={styles.summaryRow}>
           <View style={styles.summaryPill}>
             <Text style={styles.summaryLabel}>Income</Text>
             <Text style={[styles.summaryValue, styles.income]}>
-              {formatCurrency(summary.totalIncome)}
+              {formatCurrency(monthSummary.totalIncome)}
             </Text>
           </View>
           <View style={styles.summaryPill}>
             <Text style={styles.summaryLabel}>Spent</Text>
             <Text style={[styles.summaryValue, styles.expense]}>
-              {formatCurrency(summary.totalExpense)}
+              {formatCurrency(monthSummary.totalExpense)}
             </Text>
           </View>
         </View>
@@ -66,13 +137,13 @@ export default function DashboardScreen() {
 
       <View style={styles.transactionsSection}>
         <View style={styles.transactionHeader}>
-          <Text style={styles.sectionTitle}>Recent</Text>
+          <Text style={styles.sectionTitle}>Transactions</Text>
           <TouchableOpacity onPress={() => router.push('/(tabs)/transactions')}>
             <Text style={styles.seeAllLink}>See all</Text>
           </TouchableOpacity>
         </View>
 
-        {recentTransactions.length > 0 ? (
+        {monthTransactions.length > 0 ? (
           <TransactionList
             transactions={recentTransactions}
             categories={categories}
@@ -84,7 +155,7 @@ export default function DashboardScreen() {
         ) : (
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>No transactions</Text>
-            <Text style={styles.emptySubtext}>Start adding transactions</Text>
+            <Text style={styles.emptySubtext}>in {monthLabel}</Text>
           </View>
         )}
       </View>
@@ -106,9 +177,61 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: palette.background,
   },
+  monthSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.lg,
+    marginBottom: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    backgroundColor: palette.surface,
+    borderRadius: radius.lg,
+    ...shadows.card,
+  },
+  monthNavButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.md,
+    backgroundColor: palette.surfaceMuted,
+  },
+  monthNavButtonDisabled: {
+    opacity: 0.4,
+  },
+  monthNavArrow: {
+    fontSize: 24,
+    fontWeight: '900',
+    color: palette.text,
+  },
+  monthNavArrowDisabled: {
+    opacity: 0.5,
+  },
+  monthDisplay: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  monthLabel: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: palette.text,
+  },
+  currentBadge: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: palette.primary,
+    backgroundColor: palette.primarySoft,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.pill,
+  },
   hero: {
     marginHorizontal: spacing.lg,
-    marginTop: spacing.xl,
     padding: spacing.xxl,
     borderRadius: radius.lg,
     backgroundColor: palette.surface,
