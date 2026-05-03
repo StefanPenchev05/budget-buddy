@@ -39,8 +39,7 @@ export default function AddTransactionScreen() {
 
   const amountValue = Number.parseFloat(amount) || 0;
   const previewSign = type === 'income' ? '+' : '-';
-  const typeAccent = type === 'income' ? palette.income : palette.expense;
-  const typeSoft = type === 'income' ? palette.incomeSoft : palette.expenseSoft;
+  const typeSemanticColor = type === 'income' ? palette.income : palette.expense;
 
   useEffect(() => {
     const categoryStillValid = filteredCategories.some(
@@ -129,15 +128,15 @@ export default function AddTransactionScreen() {
                 {selectedCategory?.name ?? 'Choose category'}
               </Text>
             </View>
-            <View style={[styles.typeBadge, { backgroundColor: typeSoft }]}>
-              <Text style={[styles.typeBadgeText, { color: typeAccent }]}>
+            <View style={styles.typeBadge}>
+              <Text style={[styles.typeBadgeText, { color: typeSemanticColor }]}>
                 {type === 'income' ? 'Income' : 'Expense'}
               </Text>
             </View>
           </View>
 
           <View style={styles.amountInputWrapper}>
-            <Text style={[styles.currencySymbol, { color: typeAccent }]}>$</Text>
+            <Text style={styles.currencySymbol}>$</Text>
             <TextInput
               style={styles.amountInput}
               placeholder="0.00"
@@ -162,14 +161,13 @@ export default function AddTransactionScreen() {
         <View style={styles.segmentedControl}>
           {(['expense', 'income'] as const).map((item) => {
             const isActive = type === item;
-            const accent = item === 'income' ? palette.income : palette.expense;
 
             return (
               <TouchableOpacity
                 key={item}
                 style={[
                   styles.segment,
-                  isActive && { backgroundColor: accent, borderColor: accent },
+                  isActive && styles.segmentActive,
                 ]}
                 onPress={() => handleTypeChange(item)}
                 activeOpacity={0.85}
@@ -276,7 +274,6 @@ export default function AddTransactionScreen() {
         <TouchableOpacity
           style={[
             styles.submitButton,
-            { backgroundColor: typeAccent },
             isLoading && styles.submitButtonDisabled,
           ]}
           onPress={handleAddTransaction}
@@ -380,9 +377,7 @@ const styles = StyleSheet.create({
   hero: {
     backgroundColor: palette.surface,
     borderRadius: radius.lg,
-    padding: spacing.xl,
-    borderWidth: 1,
-    borderColor: palette.border,
+    padding: spacing.xxl,
     ...shadows.card,
   },
   heroHeader: {
@@ -404,9 +399,12 @@ const styles = StyleSheet.create({
     color: palette.text,
   },
   typeBadge: {
+    backgroundColor: palette.surfaceMuted,
     borderRadius: radius.pill,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
+    borderWidth: 1,
+    borderColor: palette.border,
   },
   typeBadgeText: {
     fontSize: 12,
@@ -418,6 +416,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.xl,
   },
   currencySymbol: {
+    color: palette.primary,
     fontSize: 46,
     fontWeight: '900',
     marginRight: spacing.sm,
@@ -451,6 +450,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: 'transparent',
+  },
+  segmentActive: {
+    backgroundColor: palette.primary,
+    borderColor: palette.primary,
   },
   segmentText: {
     color: palette.textMuted,
@@ -570,6 +573,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   submitButton: {
+    backgroundColor: palette.primary,
     borderRadius: radius.lg,
     paddingVertical: spacing.lg,
     alignItems: 'center',
