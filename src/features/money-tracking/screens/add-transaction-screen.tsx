@@ -15,6 +15,7 @@ import {
 import { Category, Transaction } from '@/src/domain/money/types';
 import { useMoneyTracker } from '@/src/composition/use-money-tracker';
 import { generateId } from '@/src/shared/ids/id-generator';
+import { useSnackbar } from '@/src/shared/feedback/snackbar';
 import { palette, radius, shadows, spacing } from '@/src/shared/theme/design-tokens';
 
 type TransactionType = 'expense' | 'income';
@@ -23,6 +24,7 @@ const quickAmounts = [5, 10, 25, 50, 100, 250];
 
 export default function AddTransactionScreen() {
   const { categories, addTransaction } = useMoneyTracker();
+  const { showSnackbar } = useSnackbar();
   const [type, setType] = useState<TransactionType>('expense');
   const [selectedCategory, setSelectedCategory] = useState<Category | undefined>();
   const [amount, setAmount] = useState('');
@@ -100,10 +102,10 @@ export default function AddTransactionScreen() {
 
       await addTransaction(transaction);
       resetForm();
-      Alert.alert('Saved', 'Transaction added successfully.');
+      showSnackbar({ message: 'Transaction saved' });
     } catch (error) {
       console.error(error);
-      Alert.alert('Error', 'Failed to add transaction.');
+      showSnackbar({ message: 'Transaction not saved', tone: 'error' });
     } finally {
       setIsLoading(false);
     }

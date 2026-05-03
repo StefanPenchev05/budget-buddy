@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import { Category, Transaction } from '@/src/domain/money/types';
+import { useSnackbar } from '@/src/shared/feedback/snackbar';
 import { palette, radius, shadows, spacing } from '@/src/shared/theme/design-tokens';
 
 interface EditTransactionModalProps {
@@ -29,6 +30,7 @@ export function EditTransactionModal({
   onClose,
   onSave,
 }: EditTransactionModalProps) {
+  const { showSnackbar } = useSnackbar();
   const [type, setType] = useState<Transaction['type']>('expense');
   const [categoryId, setCategoryId] = useState('');
   const [amount, setAmount] = useState('');
@@ -85,6 +87,10 @@ export function EditTransactionModal({
         type,
       });
       onClose();
+      showSnackbar({ message: 'Transaction updated' });
+    } catch (error) {
+      console.error(error);
+      showSnackbar({ message: 'Update not saved', tone: 'error' });
     } finally {
       setIsSaving(false);
     }

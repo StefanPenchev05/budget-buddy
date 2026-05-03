@@ -1,5 +1,6 @@
 import { useMoneyTracker } from "@/src/composition/use-money-tracker";
 import { generateId } from "@/src/shared/ids/id-generator";
+import { useSnackbar } from "@/src/shared/feedback/snackbar";
 import { Category } from "@/src/domain/money/types";
 import React, { useMemo, useState } from "react";
 import {
@@ -62,6 +63,7 @@ const gridItemSize = (width - 32 - 24 - 24) / 4;
 
 export default function CategoriesScreen() {
   const { categories, addCategory, deleteCategory } = useMoneyTracker();
+  const { showSnackbar } = useSnackbar();
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [categoryName, setCategoryName] = useState("");
@@ -134,10 +136,10 @@ export default function CategoriesScreen() {
 
       await addCategory(newCategory);
       closeModal();
-      Alert.alert("Created", "Category added successfully.");
+      showSnackbar({ message: "Category created" });
     } catch (error) {
       console.error(error);
-      Alert.alert("Error", "Failed to add category.");
+      showSnackbar({ message: "Category not created", tone: "error" });
     }
   };
 

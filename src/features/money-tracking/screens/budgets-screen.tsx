@@ -12,6 +12,7 @@ import {
 import { Budget, Category } from '@/src/domain/money/types';
 import { useMoneyTracker } from '@/src/composition/use-money-tracker';
 import { formatCurrency } from '@/src/shared/formatting/formatters';
+import { useSnackbar } from '@/src/shared/feedback/snackbar';
 import { generateId } from '@/src/shared/ids/id-generator';
 import { palette, radius, shadows, spacing } from '@/src/shared/theme/design-tokens';
 
@@ -32,6 +33,7 @@ export default function BudgetsScreen() {
     upsertBudget,
     deleteBudget,
   } = useMoneyTracker();
+  const { showSnackbar } = useSnackbar();
   const [showModal, setShowModal] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState('');
   const [budgetAmount, setBudgetAmount] = useState('');
@@ -99,6 +101,7 @@ export default function BudgetsScreen() {
       month: currentMonth,
     });
     setShowModal(false);
+    showSnackbar({ message: 'Budget saved' });
   };
 
   const handleDeleteBudget = (budget: Budget) => {
@@ -107,7 +110,10 @@ export default function BudgetsScreen() {
       {
         text: 'Delete',
         style: 'destructive',
-        onPress: () => deleteBudget(budget.id, currentMonth),
+        onPress: async () => {
+          await deleteBudget(budget.id, currentMonth);
+          showSnackbar({ message: 'Budget deleted', tone: 'info' });
+        },
       },
     ]);
   };

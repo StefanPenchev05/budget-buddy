@@ -7,16 +7,17 @@ import {
   Text,
   ScrollView,
   Share,
-  Alert,
 } from 'react-native';
 import { useMoneyTracker } from '@/src/composition/use-money-tracker';
 import { Transaction } from '@/src/domain/money/types';
 import { EditTransactionModal } from '@/src/features/money-tracking/components/edit-transaction-modal';
 import { TransactionList } from '@/src/features/money-tracking/components/transaction-list';
 import { formatCurrency } from '@/src/shared/formatting/formatters';
+import { useSnackbar } from '@/src/shared/feedback/snackbar';
 
 export default function SearchScreen() {
   const { transactions, categories, deleteTransaction, updateTransaction } = useMoneyTracker();
+  const { showSnackbar } = useSnackbar();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'expense' | 'income'>('all');
   const [filterCategory, setFilterCategory] = useState<string | null>(null);
@@ -73,9 +74,9 @@ export default function SearchScreen() {
         title: 'Export Transactions',
       });
 
-      Alert.alert('Success', 'Transactions exported to clipboard');
+      showSnackbar({ message: 'Transactions exported' });
     } catch {
-      Alert.alert('Error', 'Failed to export transactions');
+      showSnackbar({ message: 'Export not completed', tone: 'error' });
     }
   };
 

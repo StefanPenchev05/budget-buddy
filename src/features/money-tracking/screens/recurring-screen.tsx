@@ -14,10 +14,12 @@ import { RecurringTransaction } from '@/src/domain/money/types';
 import { generateId } from '@/src/shared/ids/id-generator';
 import { CategoryPicker } from '@/src/features/money-tracking/components/category-picker';
 import { useMoneyTracker } from '@/src/composition/use-money-tracker';
+import { useSnackbar } from '@/src/shared/feedback/snackbar';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 export default function RecurringScreen() {
   const { categories } = useMoneyTracker();
+  const { showSnackbar } = useSnackbar();
   const [recurringTransactions, setRecurringTransactions] = useState<RecurringTransaction[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [type, setType] = useState<'expense' | 'income'>('expense');
@@ -53,7 +55,7 @@ export default function RecurringScreen() {
     setRecurringTransactions([...recurringTransactions, newRecurring]);
     resetForm();
     setShowAddModal(false);
-    Alert.alert('Success', 'Recurring transaction created');
+    showSnackbar({ message: 'Recurring created' });
   };
 
   const resetForm = () => {

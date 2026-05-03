@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import "react-native-reanimated";
 
 import { useMoneyTracker } from "@/src/composition/use-money-tracker";
+import { SnackbarProvider } from "@/src/shared/feedback/snackbar";
 import { palette } from "@/src/shared/theme/design-tokens";
 
 export const unstable_settings = {
@@ -32,14 +33,16 @@ export default function RootLayout() {
         },
       }}
     >
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen
-          name="modal"
-          options={{ presentation: "modal", title: "Modal" }}
-        />
-      </Stack>
-      <StatusBar style="light" />
+      <SnackbarProvider>
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen
+            name="modal"
+            options={{ presentation: "modal", title: "Modal" }}
+          />
+        </Stack>
+        <StatusBar style="light" />
+      </SnackbarProvider>
     </ThemeProvider>
   );
 }
