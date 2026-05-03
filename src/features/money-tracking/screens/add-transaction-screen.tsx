@@ -1,52 +1,90 @@
-import React, { useState } from 'react';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
-  View,
-  StyleSheet,
-  ScrollView,
-  TextInput,
-  TouchableOpacity,
-  Text,
   Alert,
   KeyboardAvoidingView,
-  Platform,
   Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import { Category, Transaction } from '@/src/domain/money/types';
 import { useMoneyTracker } from '@/src/composition/use-money-tracker';
 import { generateId } from '@/src/shared/ids/id-generator';
-import { Transaction } from '@/src/domain/money/types';
+import { palette, radius, shadows, spacing } from '@/src/shared/theme/design-tokens';
+
+type TransactionType = 'expense' | 'income';
+
+const quickAmounts = [5, 10, 25, 50, 100, 250];
 
 export default function AddTransactionScreen() {
   const { categories, addTransaction } = useMoneyTracker();
-  const [type, setType] = useState<'expense' | 'income'>('expense');
-  const [selectedCategory, setSelectedCategory] = useState(
-    categories.find((c) => c.type === type)
-  );
+  const [type, setType] = useState<TransactionType>('expense');
+  const [selectedCategory, setSelectedCategory] = useState<Category | undefined>();
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
-  const [showDetails, setShowDetails] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleDateChange = (event: any, selectedDate: any) => {
+  const filteredCategories = useMemo(
+    () => categories.filter((category) => category.type === type),
+    [categories, type],
+  );
+
+  const amountValue = Number.parseFloat(amount) || 0;
+  const previewSign = type === 'income' ? '+' : '-';
+  const typeAccent = type === 'income' ? palette.income : palette.expense;
+  const typeSoft = type === 'income' ? palette.incomeSoft : palette.expenseSoft;
+
+  useEffect(() => {
+    const categoryStillValid = filteredCategories.some(
+      (category) => category.id === selectedCategory?.id,
+    );
+
+    if (!categoryStillValid) {
+      setSelectedCategory(filteredCategories[0]);
+    }
+  }, [filteredCategories, selectedCategory?.id]);
+
+  const handleDateChange = (_event: unknown, selectedDate?: Date) => {
     if (Platform.OS === 'android') {
       setShowDatePicker(false);
     }
+
     if (selectedDate) {
       setDate(selectedDate);
     }
   };
 
+  const handleTypeChange = (newType: TransactionType) => {
+    setType(newType);
+  };
+
+  const handleQuickAmount = (value: number) => {
+    setAmount(String(value));
+  };
+
+  const resetForm = () => {
+    setAmount('');
+    setDescription('');
+    setDate(new Date());
+    setSelectedCategory(categories.find((category) => category.type === type));
+  };
+
   const handleAddTransaction = async () => {
-    if (!amount || !selectedCategory) {
-      Alert.alert('Error', 'Please enter amount and select category');
+    if (!amountValue || !selectedCategory) {
+      Alert.alert('Missing details', 'Enter an amount and select a category.');
       return;
     }
 
-    if (parseFloat(amount) <= 0) {
-      Alert.alert('Error', 'Amount must be greater than 0');
+    if (amountValue <= 0) {
+      Alert.alert('Invalid amount', 'Amount must be greater than 0.');
       return;
     }
 
@@ -55,225 +93,273 @@ export default function AddTransactionScreen() {
       const transaction: Transaction = {
         id: generateId(),
         categoryId: selectedCategory.id,
-        amount: parseFloat(amount),
-        description,
+        amount: amountValue,
+        description: description.trim(),
         date: date.toISOString().split('T')[0],
         type,
       };
 
       await addTransaction(transaction);
-      Alert.alert('Success', 'Transaction added successfully');
       resetForm();
+      Alert.alert('Saved', 'Transaction added successfully.');
     } catch (error) {
-      Alert.alert('Error', 'Failed to add transaction');
       console.error(error);
+      Alert.alert('Error', 'Failed to add transaction.');
     } finally {
       setIsLoading(false);
     }
   };
-
-  const resetForm = () => {
-    setAmount('');
-    setDescription('');
-    setDate(new Date());
-    const defaultCategory = categories.find((c) => c.type === type);
-    setSelectedCategory(defaultCategory);
-  };
-
-  const handleTypeChange = (newType: 'expense' | 'income') => {
-    setType(newType);
-    const defaultCategory = categories.find((c) => c.type === newType);
-    setSelectedCategory(defaultCategory);
-  };
-
-  const expenseCategories = categories.filter((c) => c.type === 'expense');
-  const incomeCategories = categories.filter((c) => c.type === 'income');
-  const filteredCategories = type === 'expense' ? expenseCategories : incomeCategories;
 
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* AMOUNT - Primary Focus */}
-        <View style={styles.amountSection}>
-          <Text style={styles.amountLabel}>Amount</Text>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.hero}>
+          <View style={styles.heroHeader}>
+            <View>
+              <Text style={styles.eyebrow}>New Transaction</Text>
+              <Text style={styles.heroTitle}>
+                {selectedCategory?.name ?? 'Choose category'}
+              </Text>
+            </View>
+            <View style={[styles.typeBadge, { backgroundColor: typeSoft }]}>
+              <Text style={[styles.typeBadgeText, { color: typeAccent }]}>
+                {type === 'income' ? 'Income' : 'Expense'}
+              </Text>
+            </View>
+          </View>
+
           <View style={styles.amountInputWrapper}>
-            <Text style={styles.currencySymbol}>$</Text>
+            <Text style={[styles.currencySymbol, { color: typeAccent }]}>$</Text>
             <TextInput
               style={styles.amountInput}
               placeholder="0.00"
               value={amount}
               onChangeText={setAmount}
               keyboardType="decimal-pad"
-              placeholderTextColor="#94A3B8"
+              placeholderTextColor={palette.textSubtle}
               autoFocus
+            />
+          </View>
+
+          <Text style={styles.previewText}>
+            {amountValue > 0
+              ? `${previewSign}$${amountValue.toFixed(2)} on ${date.toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                })}`
+              : 'Enter an amount to preview the entry'}
+          </Text>
+        </View>
+
+        <View style={styles.segmentedControl}>
+          {(['expense', 'income'] as const).map((item) => {
+            const isActive = type === item;
+            const accent = item === 'income' ? palette.income : palette.expense;
+
+            return (
+              <TouchableOpacity
+                key={item}
+                style={[
+                  styles.segment,
+                  isActive && { backgroundColor: accent, borderColor: accent },
+                ]}
+                onPress={() => handleTypeChange(item)}
+                activeOpacity={0.85}
+              >
+                <Text style={[styles.segmentText, isActive && styles.segmentTextActive]}>
+                  {item === 'income' ? 'Income' : 'Expense'}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        <View style={styles.quickAmountSection}>
+          <Text style={styles.sectionLabel}>Quick Amount</Text>
+          <View style={styles.quickAmountGrid}>
+            {quickAmounts.map((value) => (
+              <TouchableOpacity
+                key={value}
+                style={[
+                  styles.quickAmountButton,
+                  amount === String(value) && styles.quickAmountButtonActive,
+                ]}
+                onPress={() => handleQuickAmount(value)}
+              >
+                <Text
+                  style={[
+                    styles.quickAmountText,
+                    amount === String(value) && styles.quickAmountTextActive,
+                  ]}
+                >
+                  ${value}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.optionsCard}>
+          <TouchableOpacity
+            style={styles.optionRow}
+            onPress={() => setShowCategoryModal(true)}
+            activeOpacity={0.8}
+          >
+            <View style={styles.optionLeft}>
+              <View
+                style={[
+                  styles.optionIcon,
+                  { backgroundColor: selectedCategory?.color ?? palette.surfaceMuted },
+                ]}
+              >
+                <Text style={styles.optionEmoji}>{selectedCategory?.icon ?? '•'}</Text>
+              </View>
+              <View>
+                <Text style={styles.optionLabel}>Category</Text>
+                <Text style={styles.optionValue}>
+                  {selectedCategory?.name ?? 'Select category'}
+                </Text>
+              </View>
+            </View>
+            <Text style={styles.optionArrow}>›</Text>
+          </TouchableOpacity>
+
+          <View style={styles.divider} />
+
+          <TouchableOpacity
+            style={styles.optionRow}
+            onPress={() => setShowDatePicker(true)}
+            activeOpacity={0.8}
+          >
+            <View style={styles.optionLeft}>
+              <View style={styles.optionIconMuted}>
+                <Text style={styles.optionEmoji}>📅</Text>
+              </View>
+              <View>
+                <Text style={styles.optionLabel}>Date</Text>
+                <Text style={styles.optionValue}>
+                  {date.toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric',
+                  })}
+                </Text>
+              </View>
+            </View>
+            <Text style={styles.optionArrow}>›</Text>
+          </TouchableOpacity>
+
+          <View style={styles.divider} />
+
+          <View style={styles.noteRow}>
+            <View style={styles.optionIconMuted}>
+              <Text style={styles.optionEmoji}>✎</Text>
+            </View>
+            <TextInput
+              style={styles.noteInput}
+              placeholder="Add note"
+              value={description}
+              onChangeText={setDescription}
+              placeholderTextColor={palette.textSubtle}
             />
           </View>
         </View>
 
-        {/* TYPE SELECTOR */}
-        <View style={styles.typeContainer}>
-          <TouchableOpacity
-            style={[
-              styles.typeButtonWide,
-              type === 'expense' && styles.typeButtonWideActive,
-            ]}
-            onPress={() => handleTypeChange('expense')}
-          >
-            <Text style={styles.typeButtonWideEmoji}>💸</Text>
-            <View>
-              <Text style={[
-                styles.typeButtonWideLabel,
-                type === 'expense' && styles.typeButtonWideTextActive
-              ]}>
-                Expense
-              </Text>
-              <Text style={styles.typeButtonWideSubtext}>Money spent</Text>
-            </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.typeButtonWide,
-              type === 'income' && styles.typeButtonWideActive,
-            ]}
-            onPress={() => handleTypeChange('income')}
-          >
-            <Text style={styles.typeButtonWideEmoji}>💰</Text>
-            <View>
-              <Text style={[
-                styles.typeButtonWideLabel,
-                type === 'income' && styles.typeButtonWideTextActive
-              ]}>
-                Income
-              </Text>
-              <Text style={styles.typeButtonWideSubtext}>Money earned</Text>
-            </View>
-          </TouchableOpacity>
-        </View>
-
-        {/* CATEGORY SELECTOR */}
         <TouchableOpacity
-          style={styles.categoryButton}
-          onPress={() => setShowCategoryModal(true)}
-        >
-          <View style={styles.categoryButtonContent}>
-            <View style={styles.categoryButtonLeft}>
-              <Text style={styles.categoryButtonEmoji}>{selectedCategory?.icon}</Text>
-              <View>
-                <Text style={styles.categoryButtonLabel}>Category</Text>
-                <Text style={styles.categoryButtonValue}>{selectedCategory?.name}</Text>
-              </View>
-            </View>
-            <Text style={styles.categoryButtonArrow}>›</Text>
-          </View>
-        </TouchableOpacity>
-
-        {/* QUICK ACTIONS - Date & Description */}
-        {showDetails && (
-          <>
-            {/* Date Picker */}
-            <TouchableOpacity
-              style={styles.detailButton}
-              onPress={() => setShowDatePicker(true)}
-            >
-              <Text style={styles.detailButtonIcon}>📅</Text>
-              <View style={styles.detailButtonContent}>
-                <Text style={styles.detailButtonLabel}>Date</Text>
-                <Text style={styles.detailButtonValue}>
-                  {date.toLocaleDateString('en-US', { 
-                    weekday: 'short', 
-                    month: 'short', 
-                    day: 'numeric' 
-                  })}
-                </Text>
-              </View>
-            </TouchableOpacity>
-
-            {/* Description */}
-            <View style={styles.detailButton}>
-              <Text style={styles.detailButtonIcon}>📝</Text>
-              <TextInput
-                style={styles.descriptionInput}
-                placeholder="Add note..."
-                value={description}
-                onChangeText={setDescription}
-                placeholderTextColor="#94A3B8"
-              />
-            </View>
-          </>
-        )}
-
-        {/* Toggle Details */}
-        <TouchableOpacity
-          style={styles.toggleDetailsButton}
-          onPress={() => setShowDetails(!showDetails)}
-        >
-          <Text style={styles.toggleDetailsText}>
-            {showDetails ? '▼ Hide Details' : '▲ Add Details'}
-          </Text>
-        </TouchableOpacity>
-
-        {/* Submit Button */}
-        <TouchableOpacity
-          style={[styles.submitButton, isLoading && styles.submitButtonDisabled]}
+          style={[
+            styles.submitButton,
+            { backgroundColor: typeAccent },
+            isLoading && styles.submitButtonDisabled,
+          ]}
           onPress={handleAddTransaction}
           disabled={isLoading}
+          activeOpacity={0.86}
         >
           <Text style={styles.submitButtonText}>
-            {isLoading ? 'Adding...' : 'Save Transaction'}
+            {isLoading ? 'Saving...' : `Save ${type === 'income' ? 'Income' : 'Expense'}`}
           </Text>
         </TouchableOpacity>
+      </ScrollView>
 
-        {/* Category Modal */}
-        <Modal
-          visible={showCategoryModal}
-          animationType="slide"
-          transparent
-        >
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
+      <Modal
+        visible={showCategoryModal}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowCategoryModal(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHandle} />
+            <View style={styles.modalHeader}>
+              <View>
                 <Text style={styles.modalTitle}>Select Category</Text>
-                <TouchableOpacity onPress={() => setShowCategoryModal(false)}>
-                  <Text style={styles.modalClose}>✕</Text>
-                </TouchableOpacity>
+                <Text style={styles.modalSubtitle}>
+                  Showing {type === 'income' ? 'income' : 'expense'} categories
+                </Text>
               </View>
+              <TouchableOpacity
+                style={styles.modalCloseButton}
+                onPress={() => setShowCategoryModal(false)}
+              >
+                <Text style={styles.modalClose}>×</Text>
+              </TouchableOpacity>
+            </View>
 
-              <ScrollView style={styles.categoriesGrid}>
-                {filteredCategories.map((category) => (
+            <ScrollView
+              style={styles.categoriesGrid}
+              contentContainerStyle={styles.categoriesGridContent}
+              showsVerticalScrollIndicator={false}
+            >
+              {filteredCategories.map((category) => {
+                const isSelected = selectedCategory?.id === category.id;
+
+                return (
                   <TouchableOpacity
                     key={category.id}
                     style={[
                       styles.categoryGridItem,
-                      selectedCategory?.id === category.id && styles.categoryGridItemSelected,
+                      isSelected && styles.categoryGridItemSelected,
                     ]}
                     onPress={() => {
                       setSelectedCategory(category);
                       setShowCategoryModal(false);
                     }}
+                    activeOpacity={0.85}
                   >
-                    <Text style={styles.categoryGridEmoji}>{category.icon}</Text>
+                    <View
+                      style={[
+                        styles.categoryGridIcon,
+                        { backgroundColor: category.color },
+                      ]}
+                    >
+                      <Text style={styles.categoryGridEmoji}>{category.icon}</Text>
+                    </View>
                     <Text style={styles.categoryGridName}>{category.name}</Text>
+                    {isSelected && <Text style={styles.categorySelectedMark}>✓</Text>}
                   </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
+                );
+              })}
+            </ScrollView>
           </View>
-        </Modal>
+        </View>
+      </Modal>
 
-        {/* Date Picker */}
-        {showDatePicker && (
-          <DateTimePicker
-            value={date}
-            mode="date"
-            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-            onChange={handleDateChange}
-          />
-        )}
-      </ScrollView>
+      {showDatePicker && (
+        <DateTimePicker
+          value={date}
+          mode="date"
+          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          onChange={handleDateChange}
+        />
+      )}
     </KeyboardAvoidingView>
   );
 }
@@ -281,278 +367,319 @@ export default function AddTransactionScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#090D14',
+    backgroundColor: palette.background,
   },
   scrollView: {
     flex: 1,
-    padding: 16,
   },
-  // AMOUNT SECTION - HERO SECTION
-  amountSection: {
-    marginBottom: 32,
+  content: {
+    padding: spacing.lg,
+    paddingBottom: spacing.xxxl,
+    gap: spacing.lg,
   },
-  amountLabel: {
+  hero: {
+    backgroundColor: palette.surface,
+    borderRadius: radius.lg,
+    padding: spacing.xl,
+    borderWidth: 1,
+    borderColor: palette.border,
+    ...shadows.card,
+  },
+  heroHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: spacing.md,
+  },
+  eyebrow: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#94A3B8',
-    marginBottom: 12,
+    fontWeight: '800',
+    color: palette.textSubtle,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+  },
+  heroTitle: {
+    marginTop: spacing.xs,
+    fontSize: 22,
+    fontWeight: '900',
+    color: palette.text,
+  },
+  typeBadge: {
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  typeBadgeText: {
+    fontSize: 12,
+    fontWeight: '900',
   },
   amountInputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#121826',
-    borderRadius: 20,
-    paddingHorizontal: 20,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    elevation: 6,
+    marginTop: spacing.xl,
   },
   currencySymbol: {
-    fontSize: 44,
-    fontWeight: '700',
-    color: '#60A5FA',
-    marginRight: 8,
+    fontSize: 46,
+    fontWeight: '900',
+    marginRight: spacing.sm,
   },
   amountInput: {
     flex: 1,
-    fontSize: 48,
+    fontSize: 52,
+    fontWeight: '900',
+    color: palette.text,
+    paddingVertical: spacing.sm,
+  },
+  previewText: {
+    marginTop: spacing.sm,
+    color: palette.textMuted,
+    fontSize: 13,
     fontWeight: '700',
-    color: '#F8FAFC',
-    paddingVertical: 20,
   },
-  // TYPE SELECTOR - HORIZONTAL CARDS
-  typeContainer: {
+  segmentedControl: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 20,
+    gap: spacing.sm,
+    backgroundColor: palette.surface,
+    borderRadius: radius.lg,
+    padding: spacing.sm,
+    borderWidth: 1,
+    borderColor: palette.border,
   },
-  typeButtonWide: {
+  segment: {
     flex: 1,
-    flexDirection: 'row',
+    borderRadius: radius.md,
+    paddingVertical: spacing.md,
     alignItems: 'center',
-    backgroundColor: '#121826',
-    borderRadius: 14,
-    padding: 14,
-    borderWidth: 2,
-    borderColor: '#263244',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 2,
-    elevation: 1,
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
-  typeButtonWideActive: {
-    borderColor: '#60A5FA',
-    borderWidth: 2.5,
-    shadowColor: '#60A5FA',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 4,
+  segmentText: {
+    color: palette.textMuted,
+    fontSize: 14,
+    fontWeight: '900',
   },
-  typeButtonWideEmoji: {
-    fontSize: 32,
-    marginRight: 10,
+  segmentTextActive: {
+    color: palette.background,
   },
-  typeButtonWideLabel: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#CBD5E1',
-    marginBottom: 2,
+  quickAmountSection: {
+    gap: spacing.md,
   },
-  typeButtonWideTextActive: {
-    color: '#60A5FA',
-  },
-  typeButtonWideSubtext: {
+  sectionLabel: {
+    color: palette.textSubtle,
     fontSize: 12,
-    color: '#94A3B8',
-    fontWeight: '500',
+    fontWeight: '900',
+    textTransform: 'uppercase',
   },
-  // CATEGORY SELECTOR
-  categoryButton: {
-    backgroundColor: '#121826',
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 2,
-    borderColor: '#60A5FA',
-    shadowColor: '#60A5FA',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 2,
+  quickAmountGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
   },
-  categoryButtonContent: {
+  quickAmountButton: {
+    minWidth: 74,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.pill,
+    backgroundColor: palette.surface,
+    borderWidth: 1,
+    borderColor: palette.border,
+    alignItems: 'center',
+  },
+  quickAmountButtonActive: {
+    backgroundColor: palette.primarySoft,
+    borderColor: palette.primary,
+  },
+  quickAmountText: {
+    color: palette.textMuted,
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  quickAmountTextActive: {
+    color: palette.primary,
+  },
+  optionsCard: {
+    backgroundColor: palette.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: palette.border,
+    overflow: 'hidden',
+  },
+  optionRow: {
+    minHeight: 72,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
   },
-  categoryButtonLeft: {
+  optionLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
+    gap: spacing.md,
   },
-  categoryButtonEmoji: {
-    fontSize: 32,
-    marginRight: 12,
-  },
-  categoryButtonLabel: {
-    fontSize: 12,
-    color: '#94A3B8',
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
-    marginBottom: 4,
-  },
-  categoryButtonValue: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#F8FAFC',
-  },
-  categoryButtonArrow: {
-    fontSize: 28,
-    color: '#60A5FA',
-    fontWeight: '700',
-  },
-  // DETAIL BUTTONS
-  detailButton: {
-    flexDirection: 'row',
+  optionIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: radius.md,
     alignItems: 'center',
-    backgroundColor: '#121826',
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#263244',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 2,
-    elevation: 1,
+    justifyContent: 'center',
   },
-  detailButtonIcon: {
-    fontSize: 24,
-    marginRight: 12,
+  optionIconMuted: {
+    width: 42,
+    height: 42,
+    borderRadius: radius.md,
+    backgroundColor: palette.surfaceMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  detailButtonContent: {
-    flex: 1,
+  optionEmoji: {
+    fontSize: 20,
   },
-  detailButtonLabel: {
+  optionLabel: {
+    color: palette.textSubtle,
     fontSize: 11,
-    color: '#94A3B8',
-    fontWeight: '600',
+    fontWeight: '900',
     textTransform: 'uppercase',
-    letterSpacing: 0.3,
-    marginBottom: 3,
   },
-  detailButtonValue: {
+  optionValue: {
+    marginTop: 2,
+    color: palette.text,
     fontSize: 15,
-    fontWeight: '600',
-    color: '#F8FAFC',
+    fontWeight: '800',
   },
-  descriptionInput: {
+  optionArrow: {
+    color: palette.textSubtle,
+    fontSize: 26,
+    fontWeight: '700',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: palette.border,
+    marginLeft: 72,
+  },
+  noteRow: {
+    minHeight: 72,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+  },
+  noteInput: {
     flex: 1,
+    color: palette.text,
     fontSize: 15,
-    color: '#F8FAFC',
-    fontWeight: '500',
-    padding: 0,
+    fontWeight: '700',
   },
-  // TOGGLE DETAILS
-  toggleDetailsButton: {
-    paddingVertical: 12,
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  toggleDetailsText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#60A5FA',
-  },
-  // SUBMIT BUTTON
   submitButton: {
-    backgroundColor: '#60A5FA',
-    borderRadius: 14,
-    paddingVertical: 16,
-    marginBottom: 32,
+    borderRadius: radius.lg,
+    paddingVertical: spacing.lg,
     alignItems: 'center',
-    shadowColor: '#60A5FA',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 6,
+    ...shadows.card,
   },
   submitButtonDisabled: {
-    opacity: 0.6,
+    opacity: 0.55,
   },
   submitButtonText: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#121826',
-    letterSpacing: 0.3,
+    fontWeight: '900',
+    color: palette.background,
   },
-  // MODAL
   modalContainer: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.62)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#121826',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingBottom: 32,
-    maxHeight: '85%',
+    backgroundColor: palette.surface,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    maxHeight: '82%',
+    borderWidth: 1,
+    borderColor: palette.border,
+  },
+  modalHandle: {
+    width: 44,
+    height: 5,
+    borderRadius: radius.pill,
+    backgroundColor: palette.border,
+    alignSelf: 'center',
+    marginTop: spacing.md,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 16,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    borderBottomColor: palette.border,
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 20,
+    fontWeight: '900',
+    color: palette.text,
+  },
+  modalSubtitle: {
+    marginTop: spacing.xs,
+    color: palette.textSubtle,
+    fontSize: 12,
     fontWeight: '700',
-    color: '#F8FAFC',
+  },
+  modalCloseButton: {
+    width: 38,
+    height: 38,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: palette.surfaceMuted,
   },
   modalClose: {
-    fontSize: 24,
-    color: '#94A3B8',
-    fontWeight: '500',
+    color: palette.textMuted,
+    fontSize: 26,
+    lineHeight: 28,
   },
   categoriesGrid: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingHorizontal: spacing.lg,
+  },
+  categoriesGridContent: {
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.xxxl,
+    gap: spacing.sm,
   },
   categoryGridItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    marginBottom: 8,
-    borderRadius: 12,
-    backgroundColor: '#090D14',
+    minHeight: 64,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.lg,
+    backgroundColor: palette.surfaceMuted,
     borderWidth: 1,
-    borderColor: '#263244',
+    borderColor: palette.border,
+    gap: spacing.md,
   },
   categoryGridItemSelected: {
-    backgroundColor: '#60A5FA',
-    borderColor: '#60A5FA',
+    borderColor: palette.primary,
+    backgroundColor: palette.primarySoft,
+  },
+  categoryGridIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   categoryGridEmoji: {
-    fontSize: 28,
-    marginRight: 12,
+    fontSize: 22,
   },
   categoryGridName: {
+    flex: 1,
     fontSize: 15,
-    fontWeight: '600',
-    color: '#F8FAFC',
+    fontWeight: '800',
+    color: palette.text,
+  },
+  categorySelectedMark: {
+    color: palette.primary,
+    fontSize: 18,
+    fontWeight: '900',
   },
 });
