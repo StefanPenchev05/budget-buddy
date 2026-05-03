@@ -49,8 +49,6 @@ export async function initDatabase() {
 
   // Insert default categories if none exist
   await insertDefaultCategories();
-  // Insert mock data if no transactions exist
-  await insertMockData();
 
   return db;
 }
@@ -67,114 +65,6 @@ async function insertDefaultCategories() {
     }
   } catch (error) {
     console.error('Error inserting default categories:', error);
-  }
-}
-
-async function insertMockData() {
-  if (!db) return;
-
-  try {
-    // Check if transactions already exist
-    const existing = await db.getFirstAsync('SELECT COUNT(*) as count FROM transactions');
-    if ((existing as any)?.count > 0) return;
-
-    const today = new Date();
-    const mockTransactions: Transaction[] = [];
-    // Generate 150 mock transactions across the last 90 days
-    for (let i = 0; i < 150; i++) {
-      const daysAgo = Math.floor(Math.random() * 90);
-      const date = new Date(today);
-      date.setDate(date.getDate() - daysAgo);
-      const dateStr = date.toISOString().split('T')[0];
-
-      const isIncome = Math.random() < 0.2;
-      
-      let categoryId: string;
-      let amount: number;
-      let description: string;
-
-      if (isIncome) {
-        const incomeCategories = ['salary', 'freelance', 'investment', 'gift', 'other-income'];
-        categoryId = incomeCategories[Math.floor(Math.random() * incomeCategories.length)];
-        
-        if (categoryId === 'salary') {
-          amount = 3000 + Math.random() * 1000;
-          description = 'Monthly salary';
-        } else if (categoryId === 'freelance') {
-          amount = 100 + Math.random() * 500;
-          description = 'Freelance project payment';
-        } else if (categoryId === 'investment') {
-          amount = 50 + Math.random() * 200;
-          description = 'Investment returns';
-        } else if (categoryId === 'gift') {
-          amount = 20 + Math.random() * 100;
-          description = 'Gift from friend';
-        } else {
-          amount = 50 + Math.random() * 200;
-          description = 'Other income';
-        }
-      } else {
-        const expenseCategories = ['food', 'transport', 'entertainment', 'shopping', 'utilities', 'healthcare', 'other-expense'];
-        categoryId = expenseCategories[Math.floor(Math.random() * expenseCategories.length)];
-        
-        if (categoryId === 'food') {
-          amount = 5 + Math.random() * 40;
-          const descriptions = ['Lunch at restaurant', 'Groceries', 'Dinner out', 'Coffee shop', 'Breakfast', 'Snacks'];
-          description = descriptions[Math.floor(Math.random() * descriptions.length)];
-        } else if (categoryId === 'transport') {
-          amount = 3 + Math.random() * 25;
-          const descriptions = ['Gas', 'Uber ride', 'Bus ticket', 'Parking', 'Car maintenance'];
-          description = descriptions[Math.floor(Math.random() * descriptions.length)];
-        } else if (categoryId === 'entertainment') {
-          amount = 5 + Math.random() * 50;
-          const descriptions = ['Movie tickets', 'Concert', 'Game purchase', 'Streaming service', 'Book'];
-          description = descriptions[Math.floor(Math.random() * descriptions.length)];
-        } else if (categoryId === 'shopping') {
-          amount = 10 + Math.random() * 150;
-          const descriptions = ['Clothes', 'Shoes', 'Electronics', 'Home items', 'Gifts'];
-          description = descriptions[Math.floor(Math.random() * descriptions.length)];
-        } else if (categoryId === 'utilities') {
-          amount = 20 + Math.random() * 100;
-          const descriptions = ['Electricity bill', 'Water bill', 'Internet', 'Phone bill', 'Gas bill'];
-          description = descriptions[Math.floor(Math.random() * descriptions.length)];
-        } else if (categoryId === 'healthcare') {
-          amount = 20 + Math.random() * 200;
-          const descriptions = ['Doctor visit', 'Pharmacy', 'Dental', 'Gym membership', 'Health supplement'];
-          description = descriptions[Math.floor(Math.random() * descriptions.length)];
-        } else {
-          amount = 5 + Math.random() * 50;
-          description = 'Other expense';
-        }
-      }
-
-      mockTransactions.push({
-        id: `mock_${Date.now()}_${i}`,
-        categoryId,
-        amount: Math.round(amount * 100) / 100,
-        description,
-        date: dateStr,
-        type: isIncome ? 'income' : 'expense',
-      });
-    }
-
-    // Insert all mock transactions
-    for (const transaction of mockTransactions) {
-      await db.runAsync(
-        'INSERT INTO transactions (id, categoryId, amount, description, date, type) VALUES (?, ?, ?, ?, ?, ?)',
-        [
-          transaction.id,
-          transaction.categoryId,
-          transaction.amount,
-          transaction.description,
-          transaction.date,
-          transaction.type,
-        ]
-      );
-    }
-
-    console.log('Mock data inserted successfully');
-  } catch (error) {
-    console.error('Error inserting mock data:', error);
   }
 }
 

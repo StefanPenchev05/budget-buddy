@@ -54,12 +54,12 @@ export default function AddTransactionScreen() {
   }, [filteredCategories, selectedCategory?.id]);
 
   const handleDateChange = (_event: unknown, selectedDate?: Date) => {
-    if (Platform.OS === 'android') {
-      setShowDatePicker(false);
-    }
-
     if (selectedDate) {
       setDate(selectedDate);
+    }
+    
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false);
     }
   };
 
@@ -351,13 +351,43 @@ export default function AddTransactionScreen() {
         </View>
       </Modal>
 
-      {showDatePicker && (
+      {showDatePicker && Platform.OS === 'android' && (
         <DateTimePicker
           value={date}
           mode="date"
-          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          display="default"
           onChange={handleDateChange}
         />
+      )}
+
+      {showDatePicker && Platform.OS === 'ios' && (
+        <Modal
+          transparent
+          visible={showDatePicker}
+          animationType="slide"
+          onRequestClose={() => setShowDatePicker(false)}
+        >
+          <View style={styles.datePickerModalOverlay}>
+            <View style={styles.datePickerModalContent}>
+              <View style={styles.datePickerHeader}>
+                <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                  <Text style={styles.datePickerButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <Text style={styles.datePickerTitle}>Select Date</Text>
+                <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                  <Text style={[styles.datePickerButtonText, styles.datePickerDoneButton]}>Done</Text>
+                </TouchableOpacity>
+              </View>
+              <DateTimePicker
+                value={date}
+                mode="date"
+                display="spinner"
+                onChange={handleDateChange}
+                textColor={palette.text}
+              />
+            </View>
+          </View>
+        </Modal>
       )}
     </KeyboardAvoidingView>
   );
@@ -686,6 +716,42 @@ const styles = StyleSheet.create({
   categorySelectedMark: {
     color: palette.primary,
     fontSize: 18,
+    fontWeight: '900',
+  },
+  datePickerModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  datePickerModalContent: {
+    backgroundColor: palette.surface,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    overflow: 'hidden',
+  },
+  datePickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: palette.border,
+  },
+  datePickerTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: palette.text,
+  },
+  datePickerButtonText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: palette.textMuted,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  datePickerDoneButton: {
+    color: palette.primary,
     fontWeight: '900',
   },
 });
