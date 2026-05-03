@@ -1,15 +1,49 @@
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
-# dependencies
+# ===== JavaScript/Node.js =====
 node_modules/
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+*.tsbuildinfo
+package-lock.json
+yarn.lock
 
-# Expo
+# ===== Expo/React Native =====
 .expo/
 dist/
 web-build/
 expo-env.d.ts
+/ios/
+/android/
+.metro-health-check*
+app-example
 
-# Native
+# ===== Go Backend =====
+# Go binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+/bin/
+/dist/
+*.o
+*.a
+
+# Go module files
+go.sum
+vendor/
+
+# Go workspace file
+go.work
+
+# GoLand IDEs
+.idea/
+*.swp
+*.swo
+
+# ===== Native Development =====
 .kotlin/
 *.orig.*
 *.jks
@@ -18,26 +52,38 @@ expo-env.d.ts
 *.key
 *.mobileprovision
 
-# Metro
-.metro-health-check*
-
-# debug
-npm-debug.*
-yarn-debug.*
-yarn-error.*
-
-# macOS
+# ===== IDEs & Editors =====
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
 .DS_Store
 *.pem
 
-# local env files
+# ===== Environment & Config =====
+.env
+.env.local
 .env*.local
+.env.production.local
+.env.development.local
+.env.test.local
 
-# typescript
-*.tsbuildinfo
+# ===== OS =====
+.DS_Store
+.DS_Store?
+*.swp
+*.swo
+*~
+.AppleDouble
+.LSOverride
+Thumbs.db
 
-app-example
+# ===== Logs =====
+logs/
+*.log
+lerna-debug.log*
 
-# generated native folders
-/ios
-/android
+# ===== Build & Distribution =====
+dist/
+build/
+out/

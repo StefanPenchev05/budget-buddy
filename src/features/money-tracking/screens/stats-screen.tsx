@@ -1,19 +1,30 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
   ScrollView,
+  StyleSheet,
+  Text,
   TouchableOpacity,
+  View,
 } from 'react-native';
+import { filterTransactionsByPeriod, getCategoryTotals, MoneyPeriod } from '@/src/domain/money/analytics';
+import { Transaction } from '@/src/domain/money/types';
 import { useMoneyTracker } from '@/src/composition/use-money-tracker';
-import {
-  filterTransactionsByPeriod,
-  getCategoryTotals,
-  MoneyPeriod,
-} from '@/src/domain/money/analytics';
 import { formatCurrency } from '@/src/shared/formatting/formatters';
 import { palette, radius, shadows, spacing } from '@/src/shared/theme/design-tokens';
+
+type TrendPoint = {
+  key: string;
+  label: string;
+  income: number;
+  expenses: number;
+  balance: number;
+};
+
+const timeframeLabels: Record<MoneyPeriod, string> = {
+  month: 'Month',
+  year: 'Year',
+  all: 'All Time',
+};
 
 export default function StatsScreen() {
   const { transactions, categories } = useMoneyTracker();
@@ -25,184 +36,401 @@ export default function StatsScreen() {
   );
 
   const stats = useMemo(() => {
-    const income = filteredTransactions
-      .filter((t) => t.type === 'income')
-      .reduce((sum, t) => sum + t.amount, 0);
-
-    const expenses = filteredTransactions
-      .filter((t) => t.type === 'expense')
-      .reduce((sum, t) => sum + t.amount, 0);
+    const income = sumByType(filteredTransactions, 'income');
+    const expenses = sumByType(filteredTransactions, 'expense');
+    const balance = income - expenses;
+    const savingsRate = income > 0 ? (balance / income) * 100 : 0;
+    const burnRate = income > 0 ? Math.min((expenses / income) * 100, 100) : 0;
 
     return {
       income,
       expenses,
-      balance: income - expenses,
-      topCategories: getCategoryTotals(filteredTransactions, categories, 'expense').slice(0, 5),
-      topIncomeCategories: getCategoryTotals(filteredTransactions, categories, 'income').slice(0, 3),
+      balance,
+      savingsRate,
+      burnRate,
+      averageExpense:
+        filteredTransactions.length > 0 ? expenses / filteredTransactions.length : 0,
       transactionCount: filteredTransactions.length,
+      topExpenseCategories: getCategoryTotals(
+        filteredTransactions,
+        categories,
+        'expense',
+      ).slice(0, 5),
+      topIncomeCategories: getCategoryTotals(
+        filteredTransactions,
+        categories,
+        'income',
+      ).slice(0, 4),
+      trend: buildTrend(filteredTransactions, timeframe),
     };
-  }, [filteredTransactions, categories]);
+  }, [categories, filteredTransactions, timeframe]);
 
-  const averageTransaction =
-    stats.transactionCount > 0 ? stats.expenses / stats.transactionCount : 0;
+  const maxTrendValue = Math.max(
+    1,
+    ...stats.trend.flatMap((point) => [point.income, point.expenses]),
+  );
+
+  const highestExpense = stats.topExpenseCategories[0];
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Timeframe Selector */}
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={styles.headerCard}>
+        <View style={styles.headerTopRow}>
+          <View>
+            <Text style={styles.eyebrow}>Analytics</Text>
+            <Text style={styles.headerTitle}>{timeframeLabels[timeframe]} View</Text>
+          </View>
+          <View
+            style={[
+              styles.balanceBadge,
+              {
+                backgroundColor:
+                  stats.balance >= 0 ? palette.incomeSoft : palette.expenseSoft,
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.balanceBadgeText,
+                { color: stats.balance >= 0 ? palette.income : palette.expense },
+              ]}
+            >
+              {stats.balance >= 0 ? 'Positive' : 'Negative'}
+            </Text>
+          </View>
+        </View>
+
+        <Text style={styles.balanceLabel}>Net Balance</Text>
+        <Text style={styles.balanceAmount}>{formatCurrency(stats.balance)}</Text>
+
+        <View style={styles.cashFlowBar}>
+          <View
+            style={[
+              styles.cashFlowFill,
+              {
+                width: `${Math.max(6, 100 - stats.burnRate)}%`,
+                backgroundColor: palette.income,
+              },
+            ]}
+          />
+          <View
+            style={[
+              styles.cashFlowFill,
+              {
+                width: `${Math.max(6, stats.burnRate)}%`,
+                backgroundColor: palette.expense,
+              },
+            ]}
+          />
+        </View>
+
+        <View style={styles.headerMetrics}>
+          <Metric label="Income" value={formatCurrency(stats.income)} color={palette.income} />
+          <Metric label="Spent" value={formatCurrency(stats.expenses)} color={palette.expense} />
+          <Metric
+            label="Saved"
+            value={`${stats.savingsRate.toFixed(1)}%`}
+            color={palette.primary}
+          />
+        </View>
+      </View>
+
       <View style={styles.timeframeContainer}>
-        {(['month', 'year', 'all'] as const).map((tf) => (
+        {(['month', 'year', 'all'] as const).map((period) => (
           <TouchableOpacity
-            key={tf}
+            key={period}
             style={[
               styles.timeframeButton,
-              timeframe === tf && styles.timeframeButtonActive,
+              timeframe === period && styles.timeframeButtonActive,
             ]}
-            onPress={() => setTimeframe(tf)}
+            onPress={() => setTimeframe(period)}
+            activeOpacity={0.85}
           >
             <Text
               style={[
                 styles.timeframeButtonText,
-                timeframe === tf && styles.timeframeButtonTextActive,
+                timeframe === period && styles.timeframeButtonTextActive,
               ]}
             >
-              {tf === 'month' ? 'Month' : tf === 'year' ? 'Year' : 'All Time'}
+              {timeframeLabels[period]}
             </Text>
           </TouchableOpacity>
         ))}
       </View>
 
-      {/* Summary Cards - Improved */}
-      <View style={styles.summaryContainer}>
-        <View style={[styles.summaryCard, { borderLeftColor: '#4CAF50', borderLeftWidth: 4 }]}>
-          <Text style={styles.summaryLabel}>Income</Text>
-          <Text style={[styles.summaryAmount, { color: '#4CAF50' }]}>
-            {formatCurrency(stats.income)}
-          </Text>
-        </View>
-
-        <View style={[styles.summaryCard, { borderLeftColor: '#FF3B30', borderLeftWidth: 4 }]}>
-          <Text style={styles.summaryLabel}>Expenses</Text>
-          <Text style={[styles.summaryAmount, { color: '#FF3B30' }]}>
-            {formatCurrency(stats.expenses)}
-          </Text>
-        </View>
-
-        <View style={[styles.summaryCard, { borderLeftColor: stats.balance >= 0 ? '#34C759' : '#FF3B30', borderLeftWidth: 4 }]}>
-          <Text style={styles.summaryLabel}>Balance</Text>
-          <Text
-            style={[
-              styles.summaryAmount,
-              { color: stats.balance >= 0 ? '#34C759' : '#FF3B30' },
-            ]}
-          >
-            {formatCurrency(stats.balance)}
-          </Text>
-        </View>
+      <View style={styles.metricsGrid}>
+        <InsightCard
+          label="Transactions"
+          value={String(stats.transactionCount)}
+          detail="Recorded entries"
+        />
+        <InsightCard
+          label="Average"
+          value={formatCurrency(stats.averageExpense)}
+          detail="Expense per entry"
+        />
+        <InsightCard
+          label="Top Spend"
+          value={highestExpense?.name ?? 'None'}
+          detail={highestExpense ? formatCurrency(highestExpense.amount) : 'No expenses'}
+        />
       </View>
 
-      {/* Key Metrics */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Key Metrics</Text>
-
-        <View style={styles.metricsGrid}>
-          <View style={styles.metricCard}>
-            <Text style={styles.metricLabel}>Avg. Transaction</Text>
-            <Text style={styles.metricValue}>{formatCurrency(averageTransaction)}</Text>
-          </View>
-          <View style={styles.metricCard}>
-            <Text style={styles.metricLabel}>Total Count</Text>
-            <Text style={styles.metricValue}>{stats.transactionCount}</Text>
-          </View>
-          <View style={styles.metricCard}>
-            <Text style={styles.metricLabel}>Savings Rate</Text>
-            <Text style={styles.metricValue}>
-              {stats.income > 0
-                ? `${((stats.balance / stats.income) * 100).toFixed(1)}%`
-                : '0%'}
-            </Text>
-          </View>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Cash Flow Trend</Text>
+          <Text style={styles.sectionMeta}>{stats.trend.length} periods</Text>
+        </View>
+        <View style={styles.trendCard}>
+          {stats.trend.map((point) => (
+            <View key={point.key} style={styles.trendColumn}>
+              <View style={styles.trendBars}>
+                <View
+                  style={[
+                    styles.trendBar,
+                    styles.incomeBar,
+                    { height: `${Math.max(4, (point.income / maxTrendValue) * 100)}%` },
+                  ]}
+                />
+                <View
+                  style={[
+                    styles.trendBar,
+                    styles.expenseBar,
+                    {
+                      height: `${Math.max(4, (point.expenses / maxTrendValue) * 100)}%`,
+                    },
+                  ]}
+                />
+              </View>
+              <Text style={styles.trendLabel}>{point.label}</Text>
+            </View>
+          ))}
+        </View>
+        <View style={styles.legendRow}>
+          <Legend color={palette.income} label="Income" />
+          <Legend color={palette.expense} label="Expenses" />
         </View>
       </View>
 
-      {/* Expense Distribution Chart */}
-      {stats.topCategories.length > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Expense Breakdown</Text>
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Expense Mix</Text>
+          <Text style={styles.sectionMeta}>Top categories</Text>
+        </View>
 
-          <View style={styles.chartContainer}>
-            {stats.topCategories.map((item, index) => (
-              <View key={item.categoryId} style={styles.chartItem}>
-                <View style={styles.chartItemHeader}>
-                  <View style={styles.chartItemLabel}>
-                    <View
-                      style={[
-                        styles.colorDot,
-                        { backgroundColor: item.color },
-                      ]}
-                    />
-                    <Text style={styles.chartItemName}>{item.name}</Text>
-                  </View>
-                  <Text style={styles.chartItemPercent}>{item.percentage.toFixed(1)}%</Text>
-                </View>
-                <View style={styles.chartBar}>
-                  <View
-                    style={[
-                      styles.chartBarFill,
-                      {
-                        width: `${item.percentage}%`,
-                        backgroundColor: item.color,
-                      },
-                    ]}
-                  />
-                </View>
-                <Text style={styles.chartItemAmount}>{formatCurrency(item.amount)}</Text>
-              </View>
+        {stats.topExpenseCategories.length > 0 ? (
+          <View style={styles.chartCard}>
+            <View style={styles.mixRail}>
+              {stats.topExpenseCategories.map((item) => (
+                <View
+                  key={item.categoryId}
+                  style={[
+                    styles.mixSegment,
+                    {
+                      width: `${Math.max(5, item.percentage)}%`,
+                      backgroundColor: item.color,
+                    },
+                  ]}
+                />
+              ))}
+            </View>
+
+            {stats.topExpenseCategories.map((item) => (
+              <CategoryBar
+                key={item.categoryId}
+                name={item.name}
+                color={item.color}
+                amount={item.amount}
+                percentage={item.percentage}
+              />
             ))}
           </View>
-        </View>
-      )}
+        ) : (
+          <EmptyCard message="No expense data for this period." />
+        )}
+      </View>
 
-      {/* Income Sources Chart */}
-      {stats.topIncomeCategories.length > 0 && (
-        <View style={styles.section}>
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Income Sources</Text>
+          <Text style={styles.sectionMeta}>Contribution</Text>
+        </View>
 
-          <View style={styles.chartContainer}>
+        {stats.topIncomeCategories.length > 0 ? (
+          <View style={styles.chartCard}>
             {stats.topIncomeCategories.map((item) => (
-              <View key={item.categoryId} style={styles.chartItem}>
-                <View style={styles.chartItemHeader}>
-                  <View style={styles.chartItemLabel}>
-                    <View
-                      style={[
-                        styles.colorDot,
-                        { backgroundColor: item.color },
-                      ]}
-                    />
-                    <Text style={styles.chartItemName}>{item.name}</Text>
-                  </View>
-                  <Text style={styles.chartItemPercent}>{item.percentage.toFixed(1)}%</Text>
-                </View>
-                <View style={styles.chartBar}>
-                  <View
-                    style={[
-                      styles.chartBarFill,
-                      {
-                        width: `${item.percentage}%`,
-                        backgroundColor: item.color,
-                      },
-                    ]}
-                  />
-                </View>
-                <Text style={styles.chartItemAmount}>{formatCurrency(item.amount)}</Text>
-              </View>
+              <CategoryBar
+                key={item.categoryId}
+                name={item.name}
+                color={item.color}
+                amount={item.amount}
+                percentage={item.percentage}
+              />
             ))}
           </View>
-        </View>
-      )}
-
-      <View style={styles.spacer} />
+        ) : (
+          <EmptyCard message="No income data for this period." />
+        )}
+      </View>
     </ScrollView>
   );
+}
+
+function Metric({
+  label,
+  value,
+  color,
+}: {
+  label: string;
+  value: string;
+  color: string;
+}) {
+  return (
+    <View style={styles.metric}>
+      <Text style={styles.metricLabel}>{label}</Text>
+      <Text style={[styles.metricValue, { color }]}>{value}</Text>
+    </View>
+  );
+}
+
+function InsightCard({
+  label,
+  value,
+  detail,
+}: {
+  label: string;
+  value: string;
+  detail: string;
+}) {
+  return (
+    <View style={styles.insightCard}>
+      <Text style={styles.insightLabel}>{label}</Text>
+      <Text style={styles.insightValue} numberOfLines={1}>
+        {value}
+      </Text>
+      <Text style={styles.insightDetail} numberOfLines={1}>
+        {detail}
+      </Text>
+    </View>
+  );
+}
+
+function Legend({ color, label }: { color: string; label: string }) {
+  return (
+    <View style={styles.legendItem}>
+      <View style={[styles.legendDot, { backgroundColor: color }]} />
+      <Text style={styles.legendText}>{label}</Text>
+    </View>
+  );
+}
+
+function CategoryBar({
+  name,
+  color,
+  amount,
+  percentage,
+}: {
+  name: string;
+  color: string;
+  amount: number;
+  percentage: number;
+}) {
+  return (
+    <View style={styles.categoryRow}>
+      <View style={styles.categoryHeader}>
+        <View style={styles.categoryTitle}>
+          <View style={[styles.categoryDot, { backgroundColor: color }]} />
+          <Text style={styles.categoryName} numberOfLines={1}>
+            {name}
+          </Text>
+        </View>
+        <Text style={styles.categoryAmount}>{formatCurrency(amount)}</Text>
+      </View>
+      <View style={styles.categoryTrack}>
+        <View
+          style={[
+            styles.categoryFill,
+            { width: `${Math.max(3, percentage)}%`, backgroundColor: color },
+          ]}
+        />
+      </View>
+      <Text style={styles.categoryPercent}>{percentage.toFixed(1)}%</Text>
+    </View>
+  );
+}
+
+function EmptyCard({ message }: { message: string }) {
+  return (
+    <View style={styles.emptyCard}>
+      <Text style={styles.emptyText}>{message}</Text>
+    </View>
+  );
+}
+
+function sumByType(transactions: Transaction[], type: Transaction['type']) {
+  return transactions
+    .filter((transaction) => transaction.type === type)
+    .reduce((sum, transaction) => sum + transaction.amount, 0);
+}
+
+function buildTrend(transactions: Transaction[], timeframe: MoneyPeriod): TrendPoint[] {
+  if (timeframe === 'month') {
+    return buildDailyTrend(transactions);
+  }
+
+  if (timeframe === 'year') {
+    return buildMonthlyTrend(transactions, 6);
+  }
+
+  return buildMonthlyTrend(transactions, 8);
+}
+
+function buildDailyTrend(transactions: Transaction[]): TrendPoint[] {
+  const today = new Date();
+
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(today);
+    date.setDate(today.getDate() - (6 - index));
+    const key = date.toISOString().split('T')[0];
+    const dayTransactions = transactions.filter((transaction) => transaction.date === key);
+
+    return {
+      key,
+      label: date.toLocaleDateString('en-US', { weekday: 'short' }).slice(0, 1),
+      income: sumByType(dayTransactions, 'income'),
+      expenses: sumByType(dayTransactions, 'expense'),
+      balance: sumByType(dayTransactions, 'income') - sumByType(dayTransactions, 'expense'),
+    };
+  });
+}
+
+function buildMonthlyTrend(
+  transactions: Transaction[],
+  visibleMonths: number,
+): TrendPoint[] {
+  const today = new Date();
+
+  return Array.from({ length: visibleMonths }, (_, index) => {
+    const date = new Date(today.getFullYear(), today.getMonth() - (visibleMonths - 1 - index), 1);
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    const monthTransactions = transactions.filter((transaction) =>
+      transaction.date.startsWith(key),
+    );
+    const income = sumByType(monthTransactions, 'income');
+    const expenses = sumByType(monthTransactions, 'expense');
+
+    return {
+      key,
+      label: date.toLocaleDateString('en-US', { month: 'short' }).slice(0, 3),
+      income,
+      expenses,
+      balance: income - expenses,
+    };
+  });
 }
 
 const styles = StyleSheet.create({
@@ -210,154 +438,299 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: palette.background,
   },
+  content: {
+    padding: spacing.lg,
+    paddingBottom: spacing.xxxl,
+  },
+  headerCard: {
+    backgroundColor: palette.surface,
+    borderRadius: radius.lg,
+    padding: spacing.xxl,
+    ...shadows.card,
+  },
+  headerTopRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  eyebrow: {
+    color: palette.textSubtle,
+    fontSize: 12,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+  },
+  headerTitle: {
+    color: palette.text,
+    fontSize: 22,
+    fontWeight: '900',
+    marginTop: spacing.xs,
+  },
+  balanceBadge: {
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  balanceBadgeText: {
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  balanceLabel: {
+    marginTop: spacing.xxl,
+    color: palette.textSubtle,
+    fontSize: 12,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+  },
+  balanceAmount: {
+    marginTop: spacing.xs,
+    color: palette.text,
+    fontSize: 38,
+    fontWeight: '900',
+  },
+  cashFlowBar: {
+    height: 12,
+    borderRadius: radius.pill,
+    flexDirection: 'row',
+    overflow: 'hidden',
+    backgroundColor: palette.surfaceMuted,
+    marginTop: spacing.xl,
+  },
+  cashFlowFill: {
+    height: '100%',
+  },
+  headerMetrics: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginTop: spacing.xl,
+  },
+  metric: {
+    flex: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderRadius: radius.md,
+    padding: spacing.md,
+  },
+  metricLabel: {
+    color: palette.textSubtle,
+    fontSize: 11,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+  },
+  metricValue: {
+    marginTop: spacing.xs,
+    fontSize: 14,
+    fontWeight: '900',
+  },
   timeframeContainer: {
     flexDirection: 'row',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
     gap: spacing.sm,
     backgroundColor: palette.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: palette.border,
+    borderRadius: radius.lg,
+    padding: spacing.sm,
+    marginTop: spacing.lg,
+    borderWidth: 1,
+    borderColor: palette.border,
   },
   timeframeButton: {
     flex: 1,
-    paddingVertical: 10,
     borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: palette.border,
-    backgroundColor: palette.surface,
+    paddingVertical: spacing.md,
     alignItems: 'center',
-    ...shadows.card,
   },
   timeframeButtonActive: {
     backgroundColor: palette.primary,
-    borderColor: palette.primary,
   },
   timeframeButtonText: {
-    fontSize: 13,
-    fontWeight: '800',
     color: palette.textMuted,
+    fontSize: 13,
+    fontWeight: '900',
   },
   timeframeButtonTextActive: {
-    color: palette.surface,
-  },
-  summaryContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
-    gap: spacing.md,
-  },
-  summaryCard: {
-    flex: 1,
-    backgroundColor: palette.surface,
-    borderRadius: radius.lg,
-    padding: 14,
-    alignItems: 'flex-start',
-    ...shadows.card,
-  },
-  summaryLabel: {
-    fontSize: 12,
-    color: palette.textMuted,
-    marginBottom: 6,
-    fontWeight: '800',
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
-  },
-  summaryAmount: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  section: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '900',
-    marginBottom: spacing.md,
-    color: palette.text,
+    color: palette.background,
   },
   metricsGrid: {
     flexDirection: 'row',
     gap: spacing.md,
+    marginTop: spacing.lg,
   },
-  metricCard: {
+  insightCard: {
     flex: 1,
     backgroundColor: palette.surface,
     borderRadius: radius.md,
     padding: spacing.md,
-    alignItems: 'center',
-    justifyContent: 'center',
     ...shadows.card,
   },
-  metricLabel: {
-    fontSize: 11,
-    color: palette.textMuted,
-    marginBottom: spacing.sm,
-    fontWeight: '800',
-    textAlign: 'center',
+  insightLabel: {
+    color: palette.textSubtle,
+    fontSize: 10,
+    fontWeight: '900',
+    textTransform: 'uppercase',
   },
-  metricValue: {
+  insightValue: {
+    color: palette.text,
     fontSize: 15,
     fontWeight: '900',
-    color: palette.primary,
-    textAlign: 'center',
+    marginTop: spacing.sm,
   },
-  chartContainer: {
+  insightDetail: {
+    color: palette.textMuted,
+    fontSize: 11,
+    fontWeight: '700',
+    marginTop: spacing.xs,
+  },
+  section: {
+    marginTop: spacing.xxl,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
+  },
+  sectionTitle: {
+    color: palette.text,
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  sectionMeta: {
+    color: palette.textSubtle,
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  trendCard: {
+    height: 190,
+    backgroundColor: palette.surface,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    ...shadows.card,
+  },
+  trendColumn: {
+    flex: 1,
+    alignItems: 'center',
+    height: '100%',
+  },
+  trendBars: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 3,
+  },
+  trendBar: {
+    width: 7,
+    minHeight: 4,
+    borderRadius: radius.pill,
+  },
+  incomeBar: {
+    backgroundColor: palette.income,
+  },
+  expenseBar: {
+    backgroundColor: palette.expense,
+  },
+  trendLabel: {
+    color: palette.textSubtle,
+    fontSize: 11,
+    fontWeight: '800',
+    marginTop: spacing.sm,
+  },
+  legendRow: {
+    flexDirection: 'row',
+    gap: spacing.lg,
+    marginTop: spacing.md,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  legendDot: {
+    width: 9,
+    height: 9,
+    borderRadius: radius.pill,
+  },
+  legendText: {
+    color: palette.textMuted,
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  chartCard: {
     backgroundColor: palette.surface,
     borderRadius: radius.lg,
     padding: spacing.lg,
     ...shadows.card,
   },
-  chartItem: {
+  mixRail: {
+    height: 14,
+    borderRadius: radius.pill,
+    flexDirection: 'row',
+    overflow: 'hidden',
+    backgroundColor: palette.surfaceMuted,
     marginBottom: spacing.xl,
   },
-  chartItemHeader: {
+  mixSegment: {
+    height: '100%',
+  },
+  categoryRow: {
+    marginBottom: spacing.lg,
+  },
+  categoryHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
     marginBottom: spacing.sm,
   },
-  chartItemLabel: {
+  categoryTitle: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
   },
-  colorDot: {
+  categoryDot: {
     width: 10,
     height: 10,
-    borderRadius: 5,
+    borderRadius: radius.pill,
     marginRight: spacing.md,
   },
-  chartItemName: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: palette.text,
+  categoryName: {
     flex: 1,
-  },
-  chartItemPercent: {
-    fontSize: 13,
+    color: palette.text,
+    fontSize: 14,
     fontWeight: '900',
-    color: palette.primary,
   },
-  chartBar: {
-    height: 8,
-    backgroundColor: palette.surfaceMuted,
-    borderRadius: 4,
-    overflow: 'hidden',
-    marginBottom: 6,
-  },
-  chartBarFill: {
-    height: '100%',
-    borderRadius: 4,
-  },
-  chartItemAmount: {
-    fontSize: 12,
-    fontWeight: '700',
+  categoryAmount: {
     color: palette.textMuted,
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  categoryTrack: {
+    height: 8,
+    borderRadius: radius.pill,
+    overflow: 'hidden',
+    backgroundColor: palette.surfaceMuted,
+  },
+  categoryFill: {
+    height: '100%',
+    borderRadius: radius.pill,
+  },
+  categoryPercent: {
+    color: palette.textSubtle,
+    fontSize: 11,
+    fontWeight: '800',
+    marginTop: spacing.xs,
     textAlign: 'right',
   },
-  spacer: {
-    height: 40,
+  emptyCard: {
+    backgroundColor: palette.surface,
+    borderRadius: radius.lg,
+    padding: spacing.xxl,
+    alignItems: 'center',
+    ...shadows.card,
+  },
+  emptyText: {
+    color: palette.textMuted,
+    fontSize: 14,
+    fontWeight: '800',
   },
 });
