@@ -1,5 +1,15 @@
-import DateTimePicker from '@react-native-community/datetimepicker';
-import React, { useEffect, useMemo, useState } from 'react';
+import { useMoneyTracker } from "@/src/composition/use-money-tracker";
+import { Category, Transaction } from "@/src/domain/money/types";
+import { useSnackbar } from "@/src/shared/feedback/snackbar";
+import { generateId } from "@/src/shared/ids/id-generator";
+import {
+  palette,
+  radius,
+  shadows,
+  spacing,
+} from "@/src/shared/theme/design-tokens";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
@@ -11,24 +21,21 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-} from 'react-native';
-import { Category, Transaction } from '@/src/domain/money/types';
-import { useMoneyTracker } from '@/src/composition/use-money-tracker';
-import { generateId } from '@/src/shared/ids/id-generator';
-import { useSnackbar } from '@/src/shared/feedback/snackbar';
-import { palette, radius, shadows, spacing } from '@/src/shared/theme/design-tokens';
+} from "react-native";
 
-type TransactionType = 'expense' | 'income';
+type TransactionType = "expense" | "income";
 
 const quickAmounts = [5, 10, 25, 50, 100, 250];
 
 export default function AddTransactionScreen() {
   const { categories, addTransaction } = useMoneyTracker();
   const { showSnackbar } = useSnackbar();
-  const [type, setType] = useState<TransactionType>('expense');
-  const [selectedCategory, setSelectedCategory] = useState<Category | undefined>();
-  const [amount, setAmount] = useState('');
-  const [description, setDescription] = useState('');
+  const [type, setType] = useState<TransactionType>("expense");
+  const [selectedCategory, setSelectedCategory] = useState<
+    Category | undefined
+  >();
+  const [amount, setAmount] = useState("");
+  const [description, setDescription] = useState("");
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
@@ -40,8 +47,9 @@ export default function AddTransactionScreen() {
   );
 
   const amountValue = Number.parseFloat(amount) || 0;
-  const previewSign = type === 'income' ? '+' : '-';
-  const typeSemanticColor = type === 'income' ? palette.income : palette.expense;
+  const previewSign = type === "income" ? "+" : "-";
+  const typeSemanticColor =
+    type === "income" ? palette.income : palette.expense;
 
   useEffect(() => {
     const categoryStillValid = filteredCategories.some(
@@ -57,8 +65,8 @@ export default function AddTransactionScreen() {
     if (selectedDate) {
       setDate(selectedDate);
     }
-    
-    if (Platform.OS === 'android') {
+
+    if (Platform.OS === "android") {
       setShowDatePicker(false);
     }
   };
@@ -72,20 +80,20 @@ export default function AddTransactionScreen() {
   };
 
   const resetForm = () => {
-    setAmount('');
-    setDescription('');
+    setAmount("");
+    setDescription("");
     setDate(new Date());
     setSelectedCategory(categories.find((category) => category.type === type));
   };
 
   const handleAddTransaction = async () => {
     if (!amountValue || !selectedCategory) {
-      Alert.alert('Missing details', 'Enter an amount and select a category.');
+      Alert.alert("Missing details", "Enter an amount and select a category.");
       return;
     }
 
     if (amountValue <= 0) {
-      Alert.alert('Invalid amount', 'Amount must be greater than 0.');
+      Alert.alert("Invalid amount", "Amount must be greater than 0.");
       return;
     }
 
@@ -96,16 +104,16 @@ export default function AddTransactionScreen() {
         categoryId: selectedCategory.id,
         amount: amountValue,
         description: description.trim(),
-        date: date.toISOString().split('T')[0],
+        date: date.toISOString().split("T")[0],
         type,
       };
 
       await addTransaction(transaction);
       resetForm();
-      showSnackbar({ message: 'Transaction saved' });
+      showSnackbar({ message: "Transaction saved" });
     } catch (error) {
       console.error(error);
-      showSnackbar({ message: 'Transaction not saved', tone: 'error' });
+      showSnackbar({ message: "Transaction not saved", tone: "error" });
     } finally {
       setIsLoading(false);
     }
@@ -113,7 +121,7 @@ export default function AddTransactionScreen() {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={styles.container}
     >
       <ScrollView
@@ -127,12 +135,14 @@ export default function AddTransactionScreen() {
             <View>
               <Text style={styles.eyebrow}>New Transaction</Text>
               <Text style={styles.heroTitle}>
-                {selectedCategory?.name ?? 'Choose category'}
+                {selectedCategory?.name ?? "Choose category"}
               </Text>
             </View>
             <View style={styles.typeBadge}>
-              <Text style={[styles.typeBadgeText, { color: typeSemanticColor }]}>
-                {type === 'income' ? 'Income' : 'Expense'}
+              <Text
+                style={[styles.typeBadgeText, { color: typeSemanticColor }]}
+              >
+                {type === "income" ? "Income" : "Expense"}
               </Text>
             </View>
           </View>
@@ -152,30 +162,35 @@ export default function AddTransactionScreen() {
 
           <Text style={styles.previewText}>
             {amountValue > 0
-              ? `${previewSign}$${amountValue.toFixed(2)} on ${date.toLocaleDateString('en-US', {
-                  month: 'short',
-                  day: 'numeric',
-                })}`
-              : 'Enter an amount to preview the entry'}
+              ? `${previewSign}$${amountValue.toFixed(2)} on ${date.toLocaleDateString(
+                  "en-US",
+                  {
+                    month: "short",
+                    day: "numeric",
+                  },
+                )}`
+              : "Enter an amount to preview the entry"}
           </Text>
         </View>
 
         <View style={styles.segmentedControl}>
-          {(['expense', 'income'] as const).map((item) => {
+          {(["expense", "income"] as const).map((item) => {
             const isActive = type === item;
 
             return (
               <TouchableOpacity
                 key={item}
-                style={[
-                  styles.segment,
-                  isActive && styles.segmentActive,
-                ]}
+                style={[styles.segment, isActive && styles.segmentActive]}
                 onPress={() => handleTypeChange(item)}
                 activeOpacity={0.85}
               >
-                <Text style={[styles.segmentText, isActive && styles.segmentTextActive]}>
-                  {item === 'income' ? 'Income' : 'Expense'}
+                <Text
+                  style={[
+                    styles.segmentText,
+                    isActive && styles.segmentTextActive,
+                  ]}
+                >
+                  {item === "income" ? "Income" : "Expense"}
                 </Text>
               </TouchableOpacity>
             );
@@ -217,15 +232,20 @@ export default function AddTransactionScreen() {
               <View
                 style={[
                   styles.optionIcon,
-                  { backgroundColor: selectedCategory?.color ?? palette.surfaceMuted },
+                  {
+                    backgroundColor:
+                      selectedCategory?.color ?? palette.surfaceMuted,
+                  },
                 ]}
               >
-                <Text style={styles.optionEmoji}>{selectedCategory?.icon ?? '•'}</Text>
+                <Text style={styles.optionEmoji}>
+                  {selectedCategory?.icon ?? "•"}
+                </Text>
               </View>
               <View>
                 <Text style={styles.optionLabel}>Category</Text>
                 <Text style={styles.optionValue}>
-                  {selectedCategory?.name ?? 'Select category'}
+                  {selectedCategory?.name ?? "Select category"}
                 </Text>
               </View>
             </View>
@@ -246,10 +266,10 @@ export default function AddTransactionScreen() {
               <View>
                 <Text style={styles.optionLabel}>Date</Text>
                 <Text style={styles.optionValue}>
-                  {date.toLocaleDateString('en-US', {
-                    weekday: 'short',
-                    month: 'short',
-                    day: 'numeric',
+                  {date.toLocaleDateString("en-US", {
+                    weekday: "short",
+                    month: "short",
+                    day: "numeric",
                   })}
                 </Text>
               </View>
@@ -283,7 +303,9 @@ export default function AddTransactionScreen() {
           activeOpacity={0.86}
         >
           <Text style={styles.submitButtonText}>
-            {isLoading ? 'Saving...' : `Save ${type === 'income' ? 'Income' : 'Expense'}`}
+            {isLoading
+              ? "Saving..."
+              : `Save ${type === "income" ? "Income" : "Expense"}`}
           </Text>
         </TouchableOpacity>
       </ScrollView>
@@ -301,7 +323,7 @@ export default function AddTransactionScreen() {
               <View>
                 <Text style={styles.modalTitle}>Select Category</Text>
                 <Text style={styles.modalSubtitle}>
-                  Showing {type === 'income' ? 'income' : 'expense'} categories
+                  Showing {type === "income" ? "income" : "expense"} categories
                 </Text>
               </View>
               <TouchableOpacity
@@ -339,10 +361,14 @@ export default function AddTransactionScreen() {
                         { backgroundColor: category.color },
                       ]}
                     >
-                      <Text style={styles.categoryGridEmoji}>{category.icon}</Text>
+                      <Text style={styles.categoryGridEmoji}>
+                        {category.icon}
+                      </Text>
                     </View>
                     <Text style={styles.categoryGridName}>{category.name}</Text>
-                    {isSelected && <Text style={styles.categorySelectedMark}>✓</Text>}
+                    {isSelected && (
+                      <Text style={styles.categorySelectedMark}>✓</Text>
+                    )}
                   </TouchableOpacity>
                 );
               })}
@@ -351,7 +377,7 @@ export default function AddTransactionScreen() {
         </View>
       </Modal>
 
-      {showDatePicker && Platform.OS === 'android' && (
+      {showDatePicker && Platform.OS === "android" && (
         <DateTimePicker
           value={date}
           mode="date"
@@ -360,7 +386,7 @@ export default function AddTransactionScreen() {
         />
       )}
 
-      {showDatePicker && Platform.OS === 'ios' && (
+      {showDatePicker && Platform.OS === "ios" && (
         <Modal
           transparent
           visible={showDatePicker}
@@ -375,7 +401,14 @@ export default function AddTransactionScreen() {
                 </TouchableOpacity>
                 <Text style={styles.datePickerTitle}>Select Date</Text>
                 <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                  <Text style={[styles.datePickerButtonText, styles.datePickerDoneButton]}>Done</Text>
+                  <Text
+                    style={[
+                      styles.datePickerButtonText,
+                      styles.datePickerDoneButton,
+                    ]}
+                  >
+                    Done
+                  </Text>
                 </TouchableOpacity>
               </View>
               <DateTimePicker
@@ -413,21 +446,21 @@ const styles = StyleSheet.create({
     ...shadows.card,
   },
   heroHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
     gap: spacing.md,
   },
   eyebrow: {
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: "800",
     color: palette.textSubtle,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
   },
   heroTitle: {
     marginTop: spacing.xs,
     fontSize: 22,
-    fontWeight: '900',
+    fontWeight: "900",
     color: palette.text,
   },
   typeBadge: {
@@ -440,23 +473,23 @@ const styles = StyleSheet.create({
   },
   typeBadgeText: {
     fontSize: 12,
-    fontWeight: '900',
+    fontWeight: "900",
   },
   amountInputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginTop: spacing.xl,
   },
   currencySymbol: {
     color: palette.primary,
     fontSize: 46,
-    fontWeight: '900',
+    fontWeight: "900",
     marginRight: spacing.sm,
   },
   amountInput: {
     flex: 1,
     fontSize: 52,
-    fontWeight: '900',
+    fontWeight: "900",
     color: palette.text,
     paddingVertical: spacing.sm,
   },
@@ -464,10 +497,10 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     color: palette.textMuted,
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   segmentedControl: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: spacing.sm,
     backgroundColor: palette.surface,
     borderRadius: radius.lg,
@@ -479,9 +512,9 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: radius.md,
     paddingVertical: spacing.md,
-    alignItems: 'center',
+    alignItems: "center",
     borderWidth: 1,
-    borderColor: 'transparent',
+    borderColor: "transparent",
   },
   segmentActive: {
     backgroundColor: palette.primary,
@@ -490,7 +523,7 @@ const styles = StyleSheet.create({
   segmentText: {
     color: palette.textMuted,
     fontSize: 14,
-    fontWeight: '900',
+    fontWeight: "900",
   },
   segmentTextActive: {
     color: palette.background,
@@ -501,12 +534,12 @@ const styles = StyleSheet.create({
   sectionLabel: {
     color: palette.textSubtle,
     fontSize: 12,
-    fontWeight: '900',
-    textTransform: 'uppercase',
+    fontWeight: "900",
+    textTransform: "uppercase",
   },
   quickAmountGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: spacing.sm,
   },
   quickAmountButton: {
@@ -517,7 +550,7 @@ const styles = StyleSheet.create({
     backgroundColor: palette.surface,
     borderWidth: 1,
     borderColor: palette.border,
-    alignItems: 'center',
+    alignItems: "center",
   },
   quickAmountButtonActive: {
     backgroundColor: palette.primarySoft,
@@ -526,7 +559,7 @@ const styles = StyleSheet.create({
   quickAmountText: {
     color: palette.textMuted,
     fontSize: 14,
-    fontWeight: '900',
+    fontWeight: "900",
   },
   quickAmountTextActive: {
     color: palette.primary,
@@ -536,18 +569,18 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: palette.border,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   optionRow: {
     minHeight: 72,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: spacing.lg,
   },
   optionLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     flex: 1,
     gap: spacing.md,
   },
@@ -555,16 +588,16 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   optionIconMuted: {
     width: 42,
     height: 42,
     borderRadius: radius.md,
     backgroundColor: palette.surfaceMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   optionEmoji: {
     fontSize: 20,
@@ -572,19 +605,19 @@ const styles = StyleSheet.create({
   optionLabel: {
     color: palette.textSubtle,
     fontSize: 11,
-    fontWeight: '900',
-    textTransform: 'uppercase',
+    fontWeight: "900",
+    textTransform: "uppercase",
   },
   optionValue: {
     marginTop: 2,
     color: palette.text,
     fontSize: 15,
-    fontWeight: '800',
+    fontWeight: "800",
   },
   optionArrow: {
     color: palette.textSubtle,
     fontSize: 26,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   divider: {
     height: 1,
@@ -593,8 +626,8 @@ const styles = StyleSheet.create({
   },
   noteRow: {
     minHeight: 72,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing.md,
     paddingHorizontal: spacing.lg,
   },
@@ -602,13 +635,13 @@ const styles = StyleSheet.create({
     flex: 1,
     color: palette.text,
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   submitButton: {
     backgroundColor: palette.primary,
     borderRadius: radius.lg,
     paddingVertical: spacing.lg,
-    alignItems: 'center',
+    alignItems: "center",
     ...shadows.card,
   },
   submitButtonDisabled: {
@@ -616,19 +649,19 @@ const styles = StyleSheet.create({
   },
   submitButtonText: {
     fontSize: 16,
-    fontWeight: '900',
+    fontWeight: "900",
     color: palette.background,
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.62)',
-    justifyContent: 'flex-end',
+    backgroundColor: "rgba(0, 0, 0, 0.62)",
+    justifyContent: "flex-end",
   },
   modalContent: {
     backgroundColor: palette.surface,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    maxHeight: '82%',
+    maxHeight: "82%",
     borderWidth: 1,
     borderColor: palette.border,
   },
@@ -637,13 +670,13 @@ const styles = StyleSheet.create({
     height: 5,
     borderRadius: radius.pill,
     backgroundColor: palette.border,
-    alignSelf: 'center',
+    alignSelf: "center",
     marginTop: spacing.md,
   },
   modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.lg,
     paddingBottom: spacing.md,
@@ -652,21 +685,21 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: '900',
+    fontWeight: "900",
     color: palette.text,
   },
   modalSubtitle: {
     marginTop: spacing.xs,
     color: palette.textSubtle,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   modalCloseButton: {
     width: 38,
     height: 38,
     borderRadius: radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: palette.surfaceMuted,
   },
   modalClose: {
@@ -683,8 +716,8 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   categoryGridItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     minHeight: 64,
     paddingHorizontal: spacing.md,
     borderRadius: radius.lg,
@@ -701,8 +734,8 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   categoryGridEmoji: {
     fontSize: 22,
@@ -710,29 +743,29 @@ const styles = StyleSheet.create({
   categoryGridName: {
     flex: 1,
     fontSize: 15,
-    fontWeight: '800',
+    fontWeight: "800",
     color: palette.text,
   },
   categorySelectedMark: {
     color: palette.primary,
     fontSize: 18,
-    fontWeight: '900',
+    fontWeight: "900",
   },
   datePickerModalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
   },
   datePickerModalContent: {
     backgroundColor: palette.surface,
     borderTopLeftRadius: radius.xl,
     borderTopRightRadius: radius.xl,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   datePickerHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     borderBottomWidth: 1,
@@ -740,18 +773,18 @@ const styles = StyleSheet.create({
   },
   datePickerTitle: {
     fontSize: 16,
-    fontWeight: '800',
+    fontWeight: "800",
     color: palette.text,
   },
   datePickerButtonText: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: "700",
     color: palette.textMuted,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
   datePickerDoneButton: {
     color: palette.primary,
-    fontWeight: '900',
+    fontWeight: "900",
   },
 });
