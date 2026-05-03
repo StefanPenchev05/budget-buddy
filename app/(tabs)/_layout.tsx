@@ -1,46 +1,41 @@
 import { Tabs } from "expo-router";
 import React from "react";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { HapticTab } from "@/components/haptic-tab";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { palette } from "@/src/shared/theme/design-tokens";
 
 export default function TabLayout() {
+  const insets = useSafeAreaInsets();
+
   return (
-    <SafeAreaView
-      style={{ flex: 1, backgroundColor: palette.background }}
-      edges={["top", "bottom"]}
+    <Tabs
+      screenOptions={{
+        tabBarActiveTintColor: palette.primary,
+        tabBarInactiveTintColor: palette.textSubtle,
+        headerShown: false,
+        sceneStyle: {
+          backgroundColor: palette.background,
+          paddingTop: insets.top,
+        },
+        tabBarButton: HapticTab,
+        tabBarLabelPosition: "below-icon",
+        tabBarStyle: {
+          borderTopWidth: 0.5,
+          borderTopColor: palette.border,
+          paddingBottom: Math.max(insets.bottom, 8),
+          paddingTop: 8,
+          height: 56 + Math.max(insets.bottom, 8),
+          backgroundColor: palette.surface,
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: "600",
+          marginTop: 2,
+        },
+      }}
     >
-      <Tabs
-        screenOptions={{
-          tabBarActiveTintColor: palette.primary,
-          tabBarInactiveTintColor: palette.textSubtle,
-          headerShown: false,
-          headerStyle: {
-            backgroundColor: palette.surface,
-          },
-          headerTintColor: palette.text,
-          headerTitleStyle: {
-            fontWeight: "800",
-          },
-          tabBarButton: HapticTab,
-          tabBarLabelPosition: "below-icon",
-          tabBarStyle: {
-            borderTopWidth: 0.5,
-            borderTopColor: palette.border,
-            paddingBottom: 8,
-            paddingTop: 8,
-            height: 64,
-            backgroundColor: palette.surface,
-          },
-          tabBarLabelStyle: {
-            fontSize: 11,
-            fontWeight: "600",
-            marginTop: 2,
-          },
-        }}
-      >
         <Tabs.Screen
           name="index"
           options={{
@@ -107,7 +102,6 @@ export default function TabLayout() {
             title: "Recurring",
           }}
         />
-      </Tabs>
-    </SafeAreaView>
+    </Tabs>
   );
 }
