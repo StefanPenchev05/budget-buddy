@@ -1,9 +1,9 @@
-import { useMoneyTracker } from "@/src/composition/use-money-tracker";
-import { generateId } from "@/src/shared/ids/id-generator";
-import { useSnackbar } from "@/src/shared/feedback/snackbar";
-import { Category } from "@/src/domain/money/types";
-import React, { useMemo, useState } from "react";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { useMoneyTracker } from "@/src/composition/use-money-tracker";
+import { Category } from "@/src/domain/money/types";
+import { useSnackbar } from "@/src/shared/feedback/snackbar";
+import { generateId } from "@/src/shared/ids/id-generator";
+import React, { useMemo, useState } from "react";
 import {
     Alert,
     Dimensions,
@@ -73,7 +73,9 @@ function CategoryRow({
       activeOpacity={0.85}
       onLongPress={() => onDelete(category.id, category.name)}
     >
-      <View style={[styles.categoryGlow, { backgroundColor: category.color }]} />
+      <View
+        style={[styles.categoryGlow, { backgroundColor: category.color }]}
+      />
 
       <View style={[styles.categoryBadge, { backgroundColor: category.color }]}>
         <Text style={styles.categoryIcon}>{category.icon}</Text>
@@ -92,7 +94,9 @@ function CategoryRow({
             ]}
           />
           <Text style={styles.categorySubtext}>
-            {category.type === "expense" ? "Expense category" : "Income category"}
+            {category.type === "expense"
+              ? "Expense category"
+              : "Income category"}
           </Text>
         </View>
       </View>

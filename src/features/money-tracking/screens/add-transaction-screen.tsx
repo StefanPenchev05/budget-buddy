@@ -1,3 +1,4 @@
+import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useMoneyTracker } from "@/src/composition/use-money-tracker";
 import { Category, Transaction } from "@/src/domain/money/types";
 import { useSnackbar } from "@/src/shared/feedback/snackbar";
@@ -8,7 +9,6 @@ import {
   shadows,
   spacing,
 } from "@/src/shared/theme/design-tokens";
-import { IconSymbol } from "@/components/ui/icon-symbol";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import React, { useEffect, useMemo, useState } from "react";
 import {

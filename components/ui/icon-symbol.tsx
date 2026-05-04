@@ -1,11 +1,14 @@
 // Fallback for using MaterialIcons on Android and web.
 
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { SymbolViewProps } from 'expo-symbols';
-import { ComponentProps } from 'react';
-import { OpaqueColorValue, type StyleProp, type TextStyle } from 'react-native';
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { SymbolViewProps } from "expo-symbols";
+import { ComponentProps } from "react";
+import { OpaqueColorValue, type StyleProp, type TextStyle } from "react-native";
 
-type IconMapping = Record<SymbolViewProps['name'], ComponentProps<typeof MaterialIcons>['name']>;
+type IconMapping = Record<
+  SymbolViewProps["name"],
+  ComponentProps<typeof MaterialIcons>["name"]
+>;
 type IconSymbolName = keyof typeof MAPPING;
 
 /**
@@ -14,21 +17,21 @@ type IconSymbolName = keyof typeof MAPPING;
  * - see SF Symbols in the [SF Symbols](https://developer.apple.com/sf-symbols/) app.
  */
 const MAPPING = {
-  'house.fill': 'home',
-  'paperplane.fill': 'send',
-  'chevron.left.forwardslash.chevron.right': 'code',
-  'chevron.right': 'chevron-right',
-  'chevron.left': 'chevron-left',
-  calendar: 'calendar-today',
-  checkmark: 'check',
-  xmark: 'close',
-  'square.and.pencil': 'edit',
-  'arrow.triangle.2.circlepath': 'loop',
-  'arrow.up': 'arrow-upward',
-  'arrow.down': 'arrow-downward',
-  'folder.fill': 'folder',
-  scope: 'center-focus-strong',
-  'tag.fill': 'local-offer',
+  "house.fill": "home",
+  "paperplane.fill": "send",
+  "chevron.left.forwardslash.chevron.right": "code",
+  "chevron.right": "chevron-right",
+  "chevron.left": "chevron-left",
+  calendar: "calendar-today",
+  checkmark: "check",
+  xmark: "close",
+  "square.and.pencil": "edit",
+  "arrow.triangle.2.circlepath": "loop",
+  "arrow.up": "arrow-upward",
+  "arrow.down": "arrow-downward",
+  "folder.fill": "folder",
+  scope: "center-focus-strong",
+  "tag.fill": "local-offer",
 } as IconMapping;
 
 /**
@@ -47,5 +50,12 @@ export function IconSymbol({
   color: string | OpaqueColorValue;
   style?: StyleProp<TextStyle>;
 }>) {
-  return <MaterialIcons color={color} size={size} name={MAPPING[name]} style={style} />;
+  return (
+    <MaterialIcons
+      color={color}
+      size={size}
+      name={MAPPING[name]}
+      style={style}
+    />
+  );
 }

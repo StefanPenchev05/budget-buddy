@@ -1,3 +1,4 @@
+import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useMoneyTracker } from "@/src/composition/use-money-tracker";
 import { getCurrentMonthKey } from "@/src/domain/money/analytics";
 import { Transaction } from "@/src/domain/money/types";
@@ -10,7 +11,6 @@ import {
     shadows,
     spacing,
 } from "@/src/shared/theme/design-tokens";
-import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import {

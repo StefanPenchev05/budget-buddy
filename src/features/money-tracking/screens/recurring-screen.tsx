@@ -1,35 +1,39 @@
-import React, { useState } from 'react';
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { useMoneyTracker } from "@/src/composition/use-money-tracker";
+import { RecurringTransaction } from "@/src/domain/money/types";
+import { CategoryPicker } from "@/src/features/money-tracking/components/category-picker";
+import { useSnackbar } from "@/src/shared/feedback/snackbar";
+import { generateId } from "@/src/shared/ids/id-generator";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import React, { useState } from "react";
 import {
-  View,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Text,
-  TextInput,
-  Alert,
-  Modal,
-  Switch,
-} from 'react-native';
-import { RecurringTransaction } from '@/src/domain/money/types';
-import { generateId } from '@/src/shared/ids/id-generator';
-import { CategoryPicker } from '@/src/features/money-tracking/components/category-picker';
-import { useMoneyTracker } from '@/src/composition/use-money-tracker';
-import { useSnackbar } from '@/src/shared/feedback/snackbar';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { IconSymbol } from '@/components/ui/icon-symbol';
+    Alert,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Switch,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from "react-native";
 
 export default function RecurringScreen() {
   const { categories } = useMoneyTracker();
   const { showSnackbar } = useSnackbar();
-  const [recurringTransactions, setRecurringTransactions] = useState<RecurringTransaction[]>([]);
+  const [recurringTransactions, setRecurringTransactions] = useState<
+    RecurringTransaction[]
+  >([]);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [type, setType] = useState<'expense' | 'income'>('expense');
+  const [type, setType] = useState<"expense" | "income">("expense");
   const [selectedCategory, setSelectedCategory] = useState(
-    categories.find((c) => c.type === type)
+    categories.find((c) => c.type === type),
   );
-  const [amount, setAmount] = useState('');
-  const [description, setDescription] = useState('');
-  const [pattern, setPattern] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly');
+  const [amount, setAmount] = useState("");
+  const [description, setDescription] = useState("");
+  const [pattern, setPattern] = useState<
+    "daily" | "weekly" | "monthly" | "yearly"
+  >("monthly");
   const [startDate, setStartDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [hasEndDate, setHasEndDate] = useState(false);
@@ -37,7 +41,7 @@ export default function RecurringScreen() {
 
   const handleAddRecurring = () => {
     if (!amount || !selectedCategory) {
-      Alert.alert('Error', 'Please fill in all required fields');
+      Alert.alert("Error", "Please fill in all required fields");
       return;
     }
 
@@ -47,8 +51,8 @@ export default function RecurringScreen() {
       amount: Number.parseFloat(amount),
       description,
       pattern,
-      startDate: startDate.toISOString().split('T')[0],
-      endDate: hasEndDate ? endDate?.toISOString().split('T')[0] : undefined,
+      startDate: startDate.toISOString().split("T")[0],
+      endDate: hasEndDate ? endDate?.toISOString().split("T")[0] : undefined,
       type,
       active: true,
     };
@@ -56,26 +60,26 @@ export default function RecurringScreen() {
     setRecurringTransactions([...recurringTransactions, newRecurring]);
     resetForm();
     setShowAddModal(false);
-    showSnackbar({ message: 'Recurring created' });
+    showSnackbar({ message: "Recurring created" });
   };
 
   const resetForm = () => {
-    setAmount('');
-    setDescription('');
-    setType('expense');
-    setPattern('monthly');
+    setAmount("");
+    setDescription("");
+    setType("expense");
+    setPattern("monthly");
     setStartDate(new Date());
     setHasEndDate(false);
     setEndDate(undefined);
-    const defaultCategory = categories.find((c) => c.type === 'expense');
+    const defaultCategory = categories.find((c) => c.type === "expense");
     setSelectedCategory(defaultCategory);
   };
 
   const handleToggleActive = (id: string) => {
     setRecurringTransactions(
       recurringTransactions.map((t) =>
-        t.id === id ? { ...t, active: !t.active } : t
-      )
+        t.id === id ? { ...t, active: !t.active } : t,
+      ),
     );
   };
 
@@ -84,15 +88,15 @@ export default function RecurringScreen() {
   };
 
   const getCategoryName = (categoryId: string) => {
-    return categories.find((c) => c.id === categoryId)?.name || 'Unknown';
+    return categories.find((c) => c.id === categoryId)?.name || "Unknown";
   };
 
   const getPatternLabel = (pattern: string) => {
     const labels: Record<string, string> = {
-      daily: 'Daily',
-      weekly: 'Weekly',
-      monthly: 'Monthly',
-      yearly: 'Yearly',
+      daily: "Daily",
+      weekly: "Weekly",
+      monthly: "Monthly",
+      yearly: "Yearly",
     };
     return labels[pattern] || pattern;
   };
@@ -102,7 +106,9 @@ export default function RecurringScreen() {
       <ScrollView style={styles.scrollView}>
         <View style={styles.header}>
           <Text style={styles.title}>Recurring Transactions</Text>
-          <Text style={styles.subtitle}>Set up automatic recurring payments</Text>
+          <Text style={styles.subtitle}>
+            Set up automatic recurring payments
+          </Text>
         </View>
 
         {recurringTransactions.length > 0 ? (
@@ -132,7 +138,8 @@ export default function RecurringScreen() {
               </View>
               <View style={styles.recurringDetails}>
                 <Text style={styles.recurringDetail}>
-                  ${recurring.amount.toFixed(2)} • {getPatternLabel(recurring.pattern)}
+                  ${recurring.amount.toFixed(2)} •{" "}
+                  {getPatternLabel(recurring.pattern)}
                 </Text>
                 <Text style={styles.recurringDate}>
                   From {recurring.startDate}
@@ -175,7 +182,9 @@ export default function RecurringScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Create Recurring Transaction</Text>
+              <Text style={styles.modalTitle}>
+                Create Recurring Transaction
+              </Text>
               <TouchableOpacity onPress={() => setShowAddModal(false)}>
                 <IconSymbol name="xmark" size={22} color="#C7D2E5" />
               </TouchableOpacity>
@@ -186,7 +195,7 @@ export default function RecurringScreen() {
               <View style={styles.section}>
                 <Text style={styles.sectionLabel}>Type</Text>
                 <View style={styles.typeSelector}>
-                  {(['expense', 'income'] as const).map((t) => (
+                  {(["expense", "income"] as const).map((t) => (
                     <TouchableOpacity
                       key={t}
                       style={[
@@ -200,7 +209,7 @@ export default function RecurringScreen() {
                       }}
                     >
                       <Text style={styles.typeButtonText}>
-                        {t === 'expense' ? 'Expense' : 'Income'}
+                        {t === "expense" ? "Expense" : "Income"}
                       </Text>
                     </TouchableOpacity>
                   ))}
@@ -249,25 +258,27 @@ export default function RecurringScreen() {
               <View style={styles.section}>
                 <Text style={styles.sectionLabel}>Frequency</Text>
                 <View style={styles.patternSelector}>
-                  {(['daily', 'weekly', 'monthly', 'yearly'] as const).map((p) => (
-                    <TouchableOpacity
-                      key={p}
-                      style={[
-                        styles.patternButton,
-                        pattern === p && styles.patternButtonActive,
-                      ]}
-                      onPress={() => setPattern(p)}
-                    >
-                      <Text
+                  {(["daily", "weekly", "monthly", "yearly"] as const).map(
+                    (p) => (
+                      <TouchableOpacity
+                        key={p}
                         style={[
-                          styles.patternButtonText,
-                          pattern === p && styles.patternButtonTextActive,
+                          styles.patternButton,
+                          pattern === p && styles.patternButtonActive,
                         ]}
+                        onPress={() => setPattern(p)}
                       >
-                        {getPatternLabel(p)}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
+                        <Text
+                          style={[
+                            styles.patternButtonText,
+                            pattern === p && styles.patternButtonTextActive,
+                          ]}
+                        >
+                          {getPatternLabel(p)}
+                        </Text>
+                      </TouchableOpacity>
+                    ),
+                  )}
                 </View>
               </View>
 
@@ -281,7 +292,7 @@ export default function RecurringScreen() {
                   <View style={styles.dateButtonContent}>
                     <IconSymbol name="calendar" size={18} color="#8997B3" />
                     <Text style={styles.dateButtonText}>
-                      {startDate.toLocaleDateString('en-US')}
+                      {startDate.toLocaleDateString("en-US")}
                     </Text>
                   </View>
                 </TouchableOpacity>
@@ -315,7 +326,7 @@ export default function RecurringScreen() {
                     <View style={styles.dateButtonContent}>
                       <IconSymbol name="calendar" size={18} color="#8997B3" />
                       <Text style={styles.dateButtonText}>
-                        {endDate?.toLocaleDateString('en-US')}
+                        {endDate?.toLocaleDateString("en-US")}
                       </Text>
                     </View>
                   </TouchableOpacity>
@@ -350,7 +361,7 @@ export default function RecurringScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B1020',
+    backgroundColor: "#0B1020",
   },
   scrollView: {
     flex: 1,
@@ -358,36 +369,36 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 16,
     paddingVertical: 20,
-    backgroundColor: '#141B2D',
+    backgroundColor: "#141B2D",
     borderBottomWidth: 1,
-    borderBottomColor: '#2B3654',
+    borderBottomColor: "#2B3654",
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#F5F7FB',
+    fontWeight: "bold",
+    color: "#F5F7FB",
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 14,
-    color: '#C7D2E5',
+    color: "#C7D2E5",
   },
   recurringItem: {
     marginHorizontal: 16,
     marginVertical: 8,
-    backgroundColor: '#141B2D',
+    backgroundColor: "#141B2D",
     borderRadius: 12,
     padding: 16,
     borderLeftWidth: 4,
-    borderLeftColor: '#4CAF50',
+    borderLeftColor: "#4CAF50",
   },
   recurringItemInactive: {
     opacity: 0.6,
   },
   recurringHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 12,
   },
   recurringInfo: {
@@ -395,12 +406,12 @@ const styles = StyleSheet.create({
   },
   recurringCategory: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#F5F7FB',
+    fontWeight: "600",
+    color: "#F5F7FB",
   },
   recurringDescription: {
     fontSize: 12,
-    color: '#C7D2E5',
+    color: "#C7D2E5",
     marginTop: 4,
   },
   recurringDetails: {
@@ -409,28 +420,28 @@ const styles = StyleSheet.create({
   },
   recurringDetail: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#E2E8F0',
+    fontWeight: "500",
+    color: "#E2E8F0",
   },
   recurringDate: {
     fontSize: 12,
-    color: '#8997B3',
+    color: "#8997B3",
   },
   deleteRecurringButton: {
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 6,
-    backgroundColor: '#3A171B',
-    alignSelf: 'flex-start',
+    backgroundColor: "#3A171B",
+    alignSelf: "flex-start",
   },
   deleteRecurringText: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#FF6B6B',
+    fontWeight: "600",
+    color: "#FF6B6B",
   },
   emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 60,
   },
   emptyIcon: {
@@ -438,104 +449,104 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#F5F7FB',
+    fontWeight: "600",
+    color: "#F5F7FB",
     marginBottom: 4,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#8997B3',
+    color: "#8997B3",
   },
   addButton: {
     marginHorizontal: 16,
     marginVertical: 12,
     paddingVertical: 12,
-    backgroundColor: '#7C8CFF',
+    backgroundColor: "#7C8CFF",
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: "center",
   },
   addButtonText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#141B2D',
+    fontWeight: "600",
+    color: "#141B2D",
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
   },
   modalContent: {
-    backgroundColor: '#141B2D',
+    backgroundColor: "#141B2D",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    maxHeight: '95%',
-    overflow: 'hidden',
+    maxHeight: "95%",
+    overflow: "hidden",
   },
   modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#2B3654',
+    borderBottomColor: "#2B3654",
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#F5F7FB',
+    fontWeight: "600",
+    color: "#F5F7FB",
   },
   modalCloseButton: {
     fontSize: 24,
-    color: '#8997B3',
+    color: "#8997B3",
   },
   modalBody: {
     padding: 16,
   },
   modalFooter: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderTopWidth: 1,
-    borderTopColor: '#2B3654',
+    borderTopColor: "#2B3654",
   },
   cancelButton: {
     flex: 1,
     paddingVertical: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#334155',
-    alignItems: 'center',
+    borderColor: "#334155",
+    alignItems: "center",
   },
   cancelButtonText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#C7D2E5',
+    fontWeight: "600",
+    color: "#C7D2E5",
   },
   submitButton: {
     flex: 1,
     paddingVertical: 12,
-    backgroundColor: '#7C8CFF',
+    backgroundColor: "#7C8CFF",
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: "center",
   },
   submitButtonText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#141B2D',
+    fontWeight: "600",
+    color: "#141B2D",
   },
   section: {
     marginBottom: 20,
   },
   sectionLabel: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     marginBottom: 12,
-    color: '#F5F7FB',
+    color: "#F5F7FB",
   },
   typeSelector: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 8,
   },
   typeButton: {
@@ -543,93 +554,93 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 8,
     borderWidth: 2,
-    borderColor: '#334155',
-    backgroundColor: '#141B2D',
-    alignItems: 'center',
+    borderColor: "#334155",
+    backgroundColor: "#141B2D",
+    alignItems: "center",
   },
   typeButtonActive: {
-    backgroundColor: '#7C8CFF',
-    borderColor: '#7C8CFF',
+    backgroundColor: "#7C8CFF",
+    borderColor: "#7C8CFF",
   },
   typeButtonText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#C7D2E5',
+    fontWeight: "600",
+    color: "#C7D2E5",
   },
   inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#141B2D',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#141B2D",
     borderRadius: 8,
     paddingHorizontal: 12,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: "#334155",
   },
   currencySymbol: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#C7D2E5',
+    fontWeight: "bold",
+    color: "#C7D2E5",
     marginRight: 8,
   },
   input: {
     flex: 1,
     paddingVertical: 12,
     fontSize: 16,
-    color: '#F5F7FB',
+    color: "#F5F7FB",
   },
   descriptionInput: {
-    backgroundColor: '#141B2D',
+    backgroundColor: "#141B2D",
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: "#334155",
     borderRadius: 8,
     padding: 12,
   },
   patternSelector: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 8,
-    flexWrap: 'wrap',
+    flexWrap: "wrap",
   },
   patternButton: {
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 20,
     borderWidth: 2,
-    borderColor: '#334155',
-    backgroundColor: '#141B2D',
+    borderColor: "#334155",
+    backgroundColor: "#141B2D",
   },
   patternButtonActive: {
-    backgroundColor: '#7C8CFF',
-    borderColor: '#7C8CFF',
+    backgroundColor: "#7C8CFF",
+    borderColor: "#7C8CFF",
   },
   patternButtonText: {
     fontSize: 12,
-    fontWeight: '500',
-    color: '#C7D2E5',
+    fontWeight: "500",
+    color: "#C7D2E5",
   },
   patternButtonTextActive: {
-    color: '#141B2D',
+    color: "#141B2D",
   },
   dateButton: {
-    backgroundColor: '#141B2D',
+    backgroundColor: "#141B2D",
     borderRadius: 8,
     paddingVertical: 12,
     paddingHorizontal: 12,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: "#334155",
   },
   dateButtonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 10,
   },
   dateButtonText: {
     fontSize: 14,
-    color: '#7C8CFF',
-    fontWeight: '500',
+    color: "#7C8CFF",
+    fontWeight: "500",
   },
   toggleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
 });
