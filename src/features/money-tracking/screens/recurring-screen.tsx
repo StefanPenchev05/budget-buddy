@@ -16,6 +16,7 @@ import { CategoryPicker } from '@/src/features/money-tracking/components/categor
 import { useMoneyTracker } from '@/src/composition/use-money-tracker';
 import { useSnackbar } from '@/src/shared/feedback/snackbar';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 
 export default function RecurringScreen() {
   const { categories } = useMoneyTracker();
@@ -43,7 +44,7 @@ export default function RecurringScreen() {
     const newRecurring: RecurringTransaction = {
       id: generateId(),
       categoryId: selectedCategory.id,
-      amount: parseFloat(amount),
+      amount: Number.parseFloat(amount),
       description,
       pattern,
       startDate: startDate.toISOString().split('T')[0],
@@ -148,7 +149,12 @@ export default function RecurringScreen() {
           ))
         ) : (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>🔄</Text>
+            <IconSymbol
+              name="arrow.triangle.2.circlepath"
+              size={44}
+              color="#8997B3"
+              style={styles.emptyIcon}
+            />
             <Text style={styles.emptyText}>No recurring transactions</Text>
             <Text style={styles.emptySubtext}>
               Create recurring transactions for regular expenses
@@ -171,7 +177,7 @@ export default function RecurringScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Create Recurring Transaction</Text>
               <TouchableOpacity onPress={() => setShowAddModal(false)}>
-                <Text style={styles.modalCloseButton}>✕</Text>
+                <IconSymbol name="xmark" size={22} color="#C7D2E5" />
               </TouchableOpacity>
             </View>
 
@@ -272,9 +278,12 @@ export default function RecurringScreen() {
                   style={styles.dateButton}
                   onPress={() => setShowDatePicker(true)}
                 >
-                  <Text style={styles.dateButtonText}>
-                    📅 {startDate.toLocaleDateString('en-US')}
-                  </Text>
+                  <View style={styles.dateButtonContent}>
+                    <IconSymbol name="calendar" size={18} color="#8997B3" />
+                    <Text style={styles.dateButtonText}>
+                      {startDate.toLocaleDateString('en-US')}
+                    </Text>
+                  </View>
                 </TouchableOpacity>
 
                 {showDatePicker && (
@@ -282,6 +291,7 @@ export default function RecurringScreen() {
                     value={startDate}
                     mode="date"
                     display="default"
+                    // eslint-disable-next-line deprecation/deprecation
                     onChange={(e, date) => {
                       setShowDatePicker(false);
                       if (date) setStartDate(date);
@@ -302,9 +312,12 @@ export default function RecurringScreen() {
                     style={styles.dateButton}
                     onPress={() => setShowDatePicker(true)}
                   >
-                    <Text style={styles.dateButtonText}>
-                      📅 {endDate?.toLocaleDateString('en-US')}
-                    </Text>
+                    <View style={styles.dateButtonContent}>
+                      <IconSymbol name="calendar" size={18} color="#8997B3" />
+                      <Text style={styles.dateButtonText}>
+                        {endDate?.toLocaleDateString('en-US')}
+                      </Text>
+                    </View>
                   </TouchableOpacity>
                 )}
               </View>
@@ -421,7 +434,6 @@ const styles = StyleSheet.create({
     paddingVertical: 60,
   },
   emptyIcon: {
-    fontSize: 48,
     marginBottom: 12,
   },
   emptyText: {
@@ -604,6 +616,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderWidth: 1,
     borderColor: '#334155',
+  },
+  dateButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
   dateButtonText: {
     fontSize: 14,

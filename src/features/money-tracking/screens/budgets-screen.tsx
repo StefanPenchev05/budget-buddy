@@ -15,6 +15,7 @@ import { formatCurrency } from '@/src/shared/formatting/formatters';
 import { useSnackbar } from '@/src/shared/feedback/snackbar';
 import { generateId } from '@/src/shared/ids/id-generator';
 import { palette, radius, shadows, spacing } from '@/src/shared/theme/design-tokens';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 
 type BudgetProgress = {
   budget: Budget;
@@ -182,7 +183,7 @@ export default function BudgetsScreen() {
                   </View>
                 </View>
                 <TouchableOpacity onPress={() => handleDeleteBudget(item.budget)}>
-                  <Text style={styles.deleteText}>×</Text>
+                  <IconSymbol name="xmark" size={20} color={palette.textMuted} />
                 </TouchableOpacity>
               </View>
 
@@ -215,7 +216,12 @@ export default function BudgetsScreen() {
           ))
         ) : (
           <View style={styles.emptyCard}>
-            <Text style={styles.emptyIcon}>🎯</Text>
+            <IconSymbol
+              name="scope"
+              size={40}
+              color={palette.primary}
+              style={styles.emptyIcon}
+            />
             <Text style={styles.emptyTitle}>No budget goals yet</Text>
             <Text style={styles.emptyText}>
               Add category limits to compare real spending against your monthly plan.
@@ -237,7 +243,7 @@ export default function BudgetsScreen() {
                 <Text style={styles.modalSubtitle}>Set a limit for {currentMonth}</Text>
               </View>
               <TouchableOpacity style={styles.modalCloseButton} onPress={() => setShowModal(false)}>
-                <Text style={styles.modalCloseText}>×</Text>
+                <IconSymbol name="xmark" size={20} color={palette.textMuted} />
               </TouchableOpacity>
             </View>
 
@@ -290,7 +296,7 @@ export default function BudgetsScreen() {
   );
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
+function Metric({ label, value }: Readonly<{ label: string; value: string }>) {
   return (
     <View style={styles.metric}>
       <Text style={styles.metricLabel}>{label}</Text>
@@ -468,7 +474,6 @@ const styles = StyleSheet.create({
     ...shadows.card,
   },
   emptyIcon: {
-    fontSize: 42,
     marginBottom: spacing.md,
   },
   emptyTitle: {

@@ -60,57 +60,86 @@ export function BudgetCircle({
 
   const netColor = net >= 0 ? palette.income : palette.expense;
   const netPrefix = net > 0 ? "+" : "";
+  const netToneSurface = net >= 0 ? palette.incomeSoft : palette.expenseSoft;
+  const netToneBorder = net >= 0 ? palette.incomeSoft : palette.expenseSoft;
+  const netDescriptor = net >= 0 ? "Up" : "Down";
+  const netMessage = net >= 0 ? "You're ahead" : "You're behind";
+
+  const topCategories = categorySpending.slice(0, 4);
+  const remainingCategories = Math.max(0, categorySpending.length - topCategories.length);
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Budget Overview</Text>
-        <Text style={styles.subtitle}>{subtitle ?? "This Month"}</Text>
+        <View style={styles.headerLeft}>
+          <Text style={styles.title}>Monthly Snapshot</Text>
+          <Text style={styles.subtitle}>{subtitle ?? "This Month"}</Text>
+        </View>
+        <View
+          style={[
+            styles.netBadge,
+            {
+              backgroundColor: netToneSurface,
+              borderColor: netColor,
+            },
+          ]}
+        >
+          <Text style={[styles.netBadgeText, { color: netColor }]}> {netDescriptor} </Text>
+        </View>
       </View>
 
       <View style={styles.circleContainer}>
-        <View style={styles.circle}>
+        <View style={[styles.circle, { borderColor: netToneBorder }]}>
+          <View style={[styles.circleGlow, { backgroundColor: netColor }]} />
           <View style={styles.centerContent}>
             <Text style={styles.totalLabel}>Net</Text>
             <Text style={[styles.totalAmount, { color: netColor }]}>
               {netPrefix}
               {formatCurrency(net)}
             </Text>
+            <Text style={styles.totalMeta}>{netMessage} this month</Text>
           </View>
         </View>
       </View>
 
       <View style={styles.statsRow}>
         <View style={styles.statPill}>
-          <Text style={styles.statLabel}>Income</Text>
-          <Text style={[styles.statValue, { color: palette.income }]}>
-            {formatCurrency(totalIncome)}
-          </Text>
+          <View style={styles.statTopRow}>
+            <View style={[styles.statIcon, { backgroundColor: palette.incomeSoft }]}
+              >
+              <Text style={[styles.statIconText, { color: palette.income }]}>↑</Text>
+            </View>
+            <Text style={styles.statLabel}>Income</Text>
+          </View>
+          <Text style={[styles.statValue, { color: palette.income }]}>{formatCurrency(totalIncome)}</Text>
         </View>
         <View style={styles.statPill}>
-          <Text style={styles.statLabel}>Spent</Text>
-          <Text style={[styles.statValue, { color: palette.expense }]}>
-            {formatCurrency(totalExpense)}
-          </Text>
+          <View style={styles.statTopRow}>
+            <View style={[styles.statIcon, { backgroundColor: palette.expenseSoft }]}>
+              <Text style={[styles.statIconText, { color: palette.expense }]}>↓</Text>
+            </View>
+            <Text style={styles.statLabel}>Spent</Text>
+          </View>
+          <Text style={[styles.statValue, { color: palette.expense }]}>{formatCurrency(totalExpense)}</Text>
         </View>
       </View>
 
       <View style={styles.breakdown}>
-        {categorySpending.length > 0 ? (
-          categorySpending.map((item) => (
+        <View style={styles.breakdownHeader}>
+          <Text style={styles.breakdownTitle}>Top Spending</Text>
+          {remainingCategories > 0 && (
+            <Text style={styles.breakdownHint}>+{remainingCategories} more</Text>
+          )}
+        </View>
+
+        {topCategories.length > 0 ? (
+          topCategories.map((item) => (
             <View key={item.categoryId} style={styles.breakdownItem}>
               <View style={styles.breakdownLeft}>
-                <View
-                  style={[
-                    styles.breakdownColor,
-                    { backgroundColor: item.color },
-                  ]}
-                />
+                <View style={[styles.breakdownColor, { backgroundColor: item.color }]} />
                 <View style={styles.breakdownInfo}>
                   <Text style={styles.breakdownName}>{item.name}</Text>
-                  <Text style={styles.breakdownAmount}>
-                    {formatCurrency(item.amount)}
-                  </Text>
+                  <Text style={styles.breakdownAmount}>{formatCurrency(item.amount)}</Text>
                 </View>
               </View>
               <View style={styles.percentageContainer}>
@@ -125,9 +154,7 @@ export function BudgetCircle({
                     ]}
                   />
                 </View>
-                <Text style={styles.percentageText}>
-                  {item.percentage.toFixed(0)}%
-                </Text>
+                <Text style={styles.percentageText}>{item.percentage.toFixed(0)}%</Text>
               </View>
             </View>
           ))
@@ -151,17 +178,34 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: spacing.xl,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  headerLeft: {
+    flex: 1,
   },
   title: {
-    fontSize: 17,
-    fontWeight: "800",
+    fontSize: 18,
+    fontWeight: '900',
     color: palette.text,
   },
   subtitle: {
     fontSize: 12,
     color: palette.textMuted,
     marginTop: spacing.xs,
-    fontWeight: "600",
+    fontWeight: '700',
+  },
+  netBadge: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    marginLeft: spacing.md,
+  },
+  netBadgeText: {
+    fontSize: 12,
+    fontWeight: '900',
   },
   circleContainer: {
     alignItems: "center",
@@ -175,8 +219,18 @@ const styles = StyleSheet.create({
     backgroundColor: palette.surfaceMuted,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 10,
+    borderWidth: 12,
     borderColor: palette.primarySoft,
+    overflow: 'hidden',
+  },
+  circleGlow: {
+    position: 'absolute',
+    top: -40,
+    left: -40,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    opacity: 0.18,
   },
   centerContent: {
     alignItems: "center",
@@ -188,9 +242,15 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   totalAmount: {
-    fontSize: 25,
+    fontSize: 28,
     fontWeight: "900",
     color: palette.text,
+  },
+  totalMeta: {
+    marginTop: spacing.xs,
+    fontSize: 12,
+    fontWeight: '700',
+    color: palette.textSubtle,
   },
   statsRow: {
     flexDirection: "row",
@@ -205,6 +265,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     borderWidth: 1,
     borderColor: palette.border,
+  },
+  statTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  statIcon: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: palette.border,
+  },
+  statIconText: {
+    fontSize: 13,
+    fontWeight: '900',
+    lineHeight: 14,
   },
   statLabel: {
     fontSize: 11,
@@ -223,6 +302,23 @@ const styles = StyleSheet.create({
     borderTopColor: palette.border,
     paddingTop: spacing.md,
     gap: spacing.md,
+  },
+  breakdownHeader: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    marginBottom: spacing.xs,
+  },
+  breakdownTitle: {
+    fontSize: 12,
+    fontWeight: '900',
+    color: palette.textSubtle,
+    textTransform: 'uppercase',
+  },
+  breakdownHint: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: palette.textMuted,
   },
   breakdownItem: {
     flexDirection: "row",

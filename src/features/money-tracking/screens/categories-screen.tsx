@@ -3,6 +3,7 @@ import { generateId } from "@/src/shared/ids/id-generator";
 import { useSnackbar } from "@/src/shared/feedback/snackbar";
 import { Category } from "@/src/domain/money/types";
 import React, { useMemo, useState } from "react";
+import { IconSymbol } from "@/components/ui/icon-symbol";
 import {
     Alert,
     Dimensions,
@@ -58,6 +59,81 @@ const ICONS = [
 ];
 
 type FilterType = "all" | "expense" | "income";
+
+function CategoryRow({
+  category,
+  onDelete,
+}: Readonly<{
+  category: Category;
+  onDelete: (id: string, name: string) => void;
+}>) {
+  return (
+    <TouchableOpacity
+      style={styles.categoryItem}
+      activeOpacity={0.85}
+      onLongPress={() => onDelete(category.id, category.name)}
+    >
+      <View style={[styles.categoryGlow, { backgroundColor: category.color }]} />
+
+      <View style={[styles.categoryBadge, { backgroundColor: category.color }]}>
+        <Text style={styles.categoryIcon}>{category.icon}</Text>
+      </View>
+
+      <View style={styles.categoryInfo}>
+        <Text style={styles.categoryName}>{category.name}</Text>
+        <View style={styles.categoryMetaRow}>
+          <View
+            style={[
+              styles.typeDot,
+              {
+                backgroundColor:
+                  category.type === "expense" ? "#FF6B6B" : "#2ECC71",
+              },
+            ]}
+          />
+          <Text style={styles.categorySubtext}>
+            {category.type === "expense" ? "Expense category" : "Income category"}
+          </Text>
+        </View>
+      </View>
+
+      <TouchableOpacity
+        style={styles.deleteButton}
+        onPress={() => onDelete(category.id, category.name)}
+      >
+        <IconSymbol name="xmark" size={18} color="#8997B3" />
+      </TouchableOpacity>
+    </TouchableOpacity>
+  );
+}
+
+function FilterButton({
+  label,
+  value,
+  isActive,
+  onSelect,
+}: Readonly<{
+  label: string;
+  value: FilterType;
+  isActive: boolean;
+  onSelect: (value: FilterType) => void;
+}>) {
+  return (
+    <TouchableOpacity
+      style={[styles.filterButton, isActive && styles.filterButtonActive]}
+      onPress={() => onSelect(value)}
+    >
+      <Text
+        style={[
+          styles.filterButtonText,
+          isActive && styles.filterButtonTextActive,
+        ]}
+      >
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+}
 
 const gridItemSize = (width - 32 - 24 - 24) / 4;
 
@@ -158,74 +234,6 @@ export default function CategoriesScreen() {
     );
   };
 
-  const CategoryItem = ({ category }: { category: Category }) => (
-    <TouchableOpacity
-      style={styles.categoryItem}
-      activeOpacity={0.85}
-      onLongPress={() => handleDeleteCategory(category.id, category.name)}
-    >
-      <View
-        style={[styles.categoryGlow, { backgroundColor: category.color }]}
-      />
-
-      <View style={[styles.categoryBadge, { backgroundColor: category.color }]}>
-        <Text style={styles.categoryIcon}>{category.icon}</Text>
-      </View>
-
-      <View style={styles.categoryInfo}>
-        <Text style={styles.categoryName}>{category.name}</Text>
-        <View style={styles.categoryMetaRow}>
-          <View
-            style={[
-              styles.typeDot,
-              {
-                backgroundColor:
-                  category.type === "expense" ? "#FF6B6B" : "#2ECC71",
-              },
-            ]}
-          />
-          <Text style={styles.categorySubtext}>
-            {category.type === "expense"
-              ? "Expense category"
-              : "Income category"}
-          </Text>
-        </View>
-      </View>
-
-      <TouchableOpacity
-        style={styles.deleteButton}
-        onPress={() => handleDeleteCategory(category.id, category.name)}
-      >
-        <Text style={styles.deleteButtonText}>×</Text>
-      </TouchableOpacity>
-    </TouchableOpacity>
-  );
-
-  const FilterButton = ({
-    label,
-    value,
-  }: {
-    label: string;
-    value: FilterType;
-  }) => (
-    <TouchableOpacity
-      style={[
-        styles.filterButton,
-        activeFilter === value && styles.filterButtonActive,
-      ]}
-      onPress={() => setActiveFilter(value)}
-    >
-      <Text
-        style={[
-          styles.filterButtonText,
-          activeFilter === value && styles.filterButtonTextActive,
-        ]}
-      >
-        {label}
-      </Text>
-    </TouchableOpacity>
-  );
-
   return (
     <View style={styles.container}>
       <ScrollView
@@ -243,7 +251,7 @@ export default function CategoriesScreen() {
           </View>
 
           <View style={styles.heroIcon}>
-            <Text style={styles.heroIconText}>🏷️</Text>
+            <IconSymbol name="tag.fill" size={28} color="#141B2D" />
           </View>
         </View>
 
@@ -285,9 +293,24 @@ export default function CategoriesScreen() {
         </View>
 
         <View style={styles.filterRow}>
-          <FilterButton label="All" value="all" />
-          <FilterButton label="Expense" value="expense" />
-          <FilterButton label="Income" value="income" />
+          <FilterButton
+            label="All"
+            value="all"
+            isActive={activeFilter === "all"}
+            onSelect={setActiveFilter}
+          />
+          <FilterButton
+            label="Expense"
+            value="expense"
+            isActive={activeFilter === "expense"}
+            onSelect={setActiveFilter}
+          />
+          <FilterButton
+            label="Income"
+            value="income"
+            isActive={activeFilter === "income"}
+            onSelect={setActiveFilter}
+          />
         </View>
 
         <View style={styles.sectionHeader}>
@@ -307,11 +330,20 @@ export default function CategoriesScreen() {
 
         {filteredCategories.length > 0 ? (
           filteredCategories.map((category) => (
-            <CategoryItem key={category.id} category={category} />
+            <CategoryRow
+              key={category.id}
+              category={category}
+              onDelete={handleDeleteCategory}
+            />
           ))
         ) : (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>🗂️</Text>
+            <IconSymbol
+              name="folder.fill"
+              size={52}
+              color="#7C8CFF"
+              style={styles.emptyIcon}
+            />
             <Text style={styles.emptyTitle}>No categories found</Text>
             <Text style={styles.emptyText}>
               Try changing your search or create a new category.
@@ -390,7 +422,12 @@ export default function CategoriesScreen() {
                     ]}
                     onPress={() => setCategoryType("expense")}
                   >
-                    <Text style={styles.typeButtonEmoji}>💸</Text>
+                    <IconSymbol
+                      name="arrow.down"
+                      size={22}
+                      color={categoryType === "expense" ? "#141B2D" : "#8997B3"}
+                      style={styles.typeButtonIcon}
+                    />
                     <Text
                       style={[
                         styles.typeButtonText,
@@ -409,7 +446,12 @@ export default function CategoriesScreen() {
                     ]}
                     onPress={() => setCategoryType("income")}
                   >
-                    <Text style={styles.typeButtonEmoji}>💰</Text>
+                    <IconSymbol
+                      name="arrow.up"
+                      size={22}
+                      color={categoryType === "income" ? "#141B2D" : "#8997B3"}
+                      style={styles.typeButtonIcon}
+                    />
                     <Text
                       style={[
                         styles.typeButtonText,
@@ -470,7 +512,11 @@ export default function CategoriesScreen() {
                       onPress={() => setSelectedColor(color)}
                     >
                       {selectedColor === color && (
-                        <Text style={styles.colorCheckmark}>✓</Text>
+                        <IconSymbol
+                          name="checkmark"
+                          size={20}
+                          color="#141B2D"
+                        />
                       )}
                     </TouchableOpacity>
                   ))}
@@ -939,8 +985,7 @@ const styles = StyleSheet.create({
     borderColor: "#2ECC71",
   },
 
-  typeButtonEmoji: {
-    fontSize: 26,
+  typeButtonIcon: {
     marginBottom: 6,
   },
 
@@ -1006,6 +1051,7 @@ const styles = StyleSheet.create({
   },
 
   colorCheckmark: {
+    // kept for backwards-compat (no longer used)
     fontSize: 22,
     color: "#141B2D",
     fontWeight: "900",
@@ -1060,7 +1106,6 @@ const styles = StyleSheet.create({
   },
 
   emptyIcon: {
-    fontSize: 54,
     marginBottom: 14,
   },
 

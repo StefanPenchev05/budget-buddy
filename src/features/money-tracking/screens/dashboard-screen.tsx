@@ -10,6 +10,7 @@ import {
     shadows,
     spacing,
 } from "@/src/shared/theme/design-tokens";
+import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import {
@@ -120,7 +121,7 @@ export default function DashboardScreen() {
           onPress={goToPreviousMonth}
           style={styles.monthNavButton}
         >
-          <Text style={styles.monthNavArrow}>‹</Text>
+          <IconSymbol name="chevron.left" size={22} color={palette.textMuted} />
         </TouchableOpacity>
         <View style={styles.monthDisplay}>
           <Text style={styles.monthLabel}>{monthLabel}</Text>
@@ -134,14 +135,11 @@ export default function DashboardScreen() {
           ]}
           disabled={!canGoToNextMonth}
         >
-          <Text
-            style={[
-              styles.monthNavArrow,
-              !canGoToNextMonth && styles.monthNavArrowDisabled,
-            ]}
-          >
-            ›
-          </Text>
+          <IconSymbol
+            name="chevron.right"
+            size={22}
+            color={canGoToNextMonth ? palette.textMuted : palette.textSubtle}
+          />
         </TouchableOpacity>
       </View>
 

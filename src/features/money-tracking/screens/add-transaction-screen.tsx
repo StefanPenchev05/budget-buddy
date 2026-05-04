@@ -8,6 +8,7 @@ import {
   shadows,
   spacing,
 } from "@/src/shared/theme/design-tokens";
+import { IconSymbol } from "@/components/ui/icon-symbol";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import React, { useEffect, useMemo, useState } from "react";
 import {
@@ -45,6 +46,12 @@ export default function AddTransactionScreen() {
     () => categories.filter((category) => category.type === type),
     [categories, type],
   );
+
+  const submitLabel = (() => {
+    if (isLoading) return "Saving...";
+    if (type === "income") return "Save Income";
+    return "Save Expense";
+  })();
 
   const amountValue = Number.parseFloat(amount) || 0;
   const previewSign = type === "income" ? "+" : "-";
@@ -249,7 +256,12 @@ export default function AddTransactionScreen() {
                 </Text>
               </View>
             </View>
-            <Text style={styles.optionArrow}>›</Text>
+            <IconSymbol
+              name="chevron.right"
+              size={22}
+              color={palette.textSubtle}
+              style={styles.optionArrowIcon}
+            />
           </TouchableOpacity>
 
           <View style={styles.divider} />
@@ -261,7 +273,11 @@ export default function AddTransactionScreen() {
           >
             <View style={styles.optionLeft}>
               <View style={styles.optionIconMuted}>
-                <Text style={styles.optionEmoji}>📅</Text>
+                <IconSymbol
+                  name="calendar"
+                  size={18}
+                  color={palette.textMuted}
+                />
               </View>
               <View>
                 <Text style={styles.optionLabel}>Date</Text>
@@ -274,14 +290,23 @@ export default function AddTransactionScreen() {
                 </Text>
               </View>
             </View>
-            <Text style={styles.optionArrow}>›</Text>
+            <IconSymbol
+              name="chevron.right"
+              size={22}
+              color={palette.textSubtle}
+              style={styles.optionArrowIcon}
+            />
           </TouchableOpacity>
 
           <View style={styles.divider} />
 
           <View style={styles.noteRow}>
             <View style={styles.optionIconMuted}>
-              <Text style={styles.optionEmoji}>✎</Text>
+              <IconSymbol
+                name="square.and.pencil"
+                size={18}
+                color={palette.textMuted}
+              />
             </View>
             <TextInput
               style={styles.noteInput}
@@ -302,11 +327,7 @@ export default function AddTransactionScreen() {
           disabled={isLoading}
           activeOpacity={0.86}
         >
-          <Text style={styles.submitButtonText}>
-            {isLoading
-              ? "Saving..."
-              : `Save ${type === "income" ? "Income" : "Expense"}`}
-          </Text>
+          <Text style={styles.submitButtonText}>{submitLabel}</Text>
         </TouchableOpacity>
       </ScrollView>
 
@@ -367,7 +388,12 @@ export default function AddTransactionScreen() {
                     </View>
                     <Text style={styles.categoryGridName}>{category.name}</Text>
                     {isSelected && (
-                      <Text style={styles.categorySelectedMark}>✓</Text>
+                      <IconSymbol
+                        name="checkmark"
+                        size={18}
+                        color={palette.primary}
+                        style={styles.categorySelectedMark}
+                      />
                     )}
                   </TouchableOpacity>
                 );
@@ -382,6 +408,7 @@ export default function AddTransactionScreen() {
           value={date}
           mode="date"
           display="default"
+          // eslint-disable-next-line deprecation/deprecation
           onChange={handleDateChange}
         />
       )}
@@ -415,6 +442,7 @@ export default function AddTransactionScreen() {
                 value={date}
                 mode="date"
                 display="spinner"
+                // eslint-disable-next-line deprecation/deprecation
                 onChange={handleDateChange}
                 textColor={palette.text}
               />
@@ -614,10 +642,8 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "800",
   },
-  optionArrow: {
-    color: palette.textSubtle,
-    fontSize: 26,
-    fontWeight: "700",
+  optionArrowIcon: {
+    marginLeft: spacing.md,
   },
   divider: {
     height: 1,
@@ -747,9 +773,7 @@ const styles = StyleSheet.create({
     color: palette.text,
   },
   categorySelectedMark: {
-    color: palette.primary,
-    fontSize: 18,
-    fontWeight: "900",
+    marginLeft: spacing.md,
   },
   datePickerModalOverlay: {
     flex: 1,
@@ -758,8 +782,8 @@ const styles = StyleSheet.create({
   },
   datePickerModalContent: {
     backgroundColor: palette.surface,
-    borderTopLeftRadius: radius.xl,
-    borderTopRightRadius: radius.xl,
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
     overflow: "hidden",
   },
   datePickerHeader: {
