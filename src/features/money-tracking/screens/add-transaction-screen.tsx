@@ -57,6 +57,7 @@ export default function AddTransactionScreen() {
   const previewSign = type === "income" ? "+" : "-";
   const typeSemanticColor =
     type === "income" ? palette.income : palette.expense;
+  const canSubmit = !!selectedCategory && amountValue > 0 && !isLoading;
 
   useEffect(() => {
     const categoryStillValid = filteredCategories.some(
@@ -131,12 +132,13 @@ export default function AddTransactionScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={styles.container}
     >
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
+      <View style={styles.body}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
         <View style={styles.hero}>
           <View style={styles.heroHeader}>
             <View>
@@ -155,7 +157,11 @@ export default function AddTransactionScreen() {
           </View>
 
           <View style={styles.amountInputWrapper}>
-            <Text style={styles.currencySymbol}>$</Text>
+            <Text
+              style={[styles.currencySymbol, { color: typeSemanticColor }]}
+            >
+              $
+            </Text>
             <TextInput
               style={styles.amountInput}
               placeholder="0.00"
@@ -183,11 +189,19 @@ export default function AddTransactionScreen() {
         <View style={styles.segmentedControl}>
           {(["expense", "income"] as const).map((item) => {
             const isActive = type === item;
+            const itemSemanticColor =
+              item === "income" ? palette.income : palette.expense;
 
             return (
               <TouchableOpacity
                 key={item}
-                style={[styles.segment, isActive && styles.segmentActive]}
+                style={[
+                  styles.segment,
+                  isActive && {
+                    backgroundColor: itemSemanticColor,
+                    borderColor: itemSemanticColor,
+                  },
+                ]}
                 onPress={() => handleTypeChange(item)}
                 activeOpacity={0.85}
               >
@@ -318,18 +332,22 @@ export default function AddTransactionScreen() {
           </View>
         </View>
 
-        <TouchableOpacity
-          style={[
-            styles.submitButton,
-            isLoading && styles.submitButtonDisabled,
-          ]}
-          onPress={handleAddTransaction}
-          disabled={isLoading}
-          activeOpacity={0.86}
-        >
-          <Text style={styles.submitButtonText}>{submitLabel}</Text>
-        </TouchableOpacity>
-      </ScrollView>
+        </ScrollView>
+
+        <View style={styles.bottomBar}>
+          <TouchableOpacity
+            style={[
+              styles.submitButton,
+              !canSubmit && styles.submitButtonDisabled,
+            ]}
+            onPress={handleAddTransaction}
+            disabled={!canSubmit}
+            activeOpacity={0.86}
+          >
+            <Text style={styles.submitButtonText}>{submitLabel}</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
 
       <Modal
         visible={showCategoryModal}
@@ -351,7 +369,11 @@ export default function AddTransactionScreen() {
                 style={styles.modalCloseButton}
                 onPress={() => setShowCategoryModal(false)}
               >
-                <Text style={styles.modalClose}>×</Text>
+                <IconSymbol
+                  name="xmark"
+                  size={20}
+                  color={palette.textMuted}
+                />
               </TouchableOpacity>
             </View>
 
@@ -442,6 +464,7 @@ export default function AddTransactionScreen() {
                 value={date}
                 mode="date"
                 display="spinner"
+                style={styles.datePicker}
                 // eslint-disable-next-line deprecation/deprecation
                 onChange={handleDateChange}
                 textColor={palette.text}
@@ -459,12 +482,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: palette.background,
   },
+  body: {
+    flex: 1,
+  },
   scrollView: {
     flex: 1,
   },
   content: {
     padding: spacing.lg,
-    paddingBottom: spacing.xxxl,
+    paddingBottom: spacing.xxxl + 92,
     gap: spacing.lg,
   },
   hero: {
@@ -509,7 +535,6 @@ const styles = StyleSheet.create({
     marginTop: spacing.xl,
   },
   currencySymbol: {
-    color: palette.primary,
     fontSize: 46,
     fontWeight: "900",
     marginRight: spacing.sm,
@@ -671,12 +696,20 @@ const styles = StyleSheet.create({
     ...shadows.card,
   },
   submitButtonDisabled: {
-    opacity: 0.55,
+    opacity: 0.5,
   },
   submitButtonText: {
     fontSize: 16,
     fontWeight: "900",
     color: palette.background,
+  },
+  bottomBar: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.lg,
+    backgroundColor: palette.background,
+    borderTopWidth: 1,
+    borderTopColor: palette.border,
   },
   modalContainer: {
     flex: 1,
@@ -784,7 +817,13 @@ const styles = StyleSheet.create({
     backgroundColor: palette.surface,
     borderTopLeftRadius: radius.lg,
     borderTopRightRadius: radius.lg,
+    width: "100%",
+    alignSelf: "stretch",
     overflow: "hidden",
+  },
+  datePicker: {
+    width: "100%",
+    alignSelf: "stretch",
   },
   datePickerHeader: {
     flexDirection: "row",
